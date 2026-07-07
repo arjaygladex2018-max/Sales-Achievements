@@ -362,6 +362,7 @@ async function fetchAllData(){
   };
 
   const agentData={}; // {nu: {name,dept,days:{date:count},todayTxns:[],monthlySrp,todaySrp}}
+  let seqCounter=0;    // increments per today-sale row so we can find the most recent one
 
   await Promise.allSettled(Object.entries(DEPT_GIDS).map(async([dept,gid])=>{
     const text=await fetchCSV(gid);
@@ -423,10 +424,10 @@ async function fetchAllData(){
         partVal.includes("TRAVEL INSURANCE");
       if(isExcluded)continue;
 
-      if(!agentData[nu])agentData[nu]={name,dept:deptName,team:(dept==="dom"?(domTeams[nu]||""):""),days:{},todaySrp:0,monthlySrp:0,todayCount:0};
+      if(!agentData[nu])agentData[nu]={name,dept:deptName,team:(dept==="dom"?(domTeams[nu]||""):""),days:{},todaySrp:0,monthlySrp:0,todayCount:0,lastSeq:0};
       agentData[nu].days[dateKey]=(agentData[nu].days[dateKey]||0)+1;
       agentData[nu].monthlySrp+=srp;
-      if(dateKey===todayStr){agentData[nu].todaySrp+=srp;agentData[nu].todayCount++;}
+      if(dateKey===todayStr){agentData[nu].todaySrp+=srp;agentData[nu].todayCount++;agentData[nu].lastSeq=++seqCounter;}
     }
   }));
 
@@ -449,7 +450,7 @@ async function fetchAllData(){
   Object.entries(agentData).forEach(([nu,d])=>{
     const photo=photos[nu]||"";
     const streak=getStreak(d.days);
-    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu});
+    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu,lastSeq:d.lastSeq});
     if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo});
     if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo});
   });
@@ -594,10 +595,11 @@ async function loadAll(userTriggered=false){
     firstSalesLoad=true;
   }
   if(firstSalesLoad||userTriggered){
-    // Page open (or manual Refresh): announce ALL of today's sales in sequence,
-    // highest SRP first (todaySales is already sorted), each with a gong.
+    // Page open (or manual Refresh): announce only the single newest sale (popup + gong).
     data.todaySales.forEach(a=>{seenCounts[a.nu]=a.todayCount;});
-    popupQueue=data.todaySales.slice();
+    let newest=null;
+    data.todaySales.forEach(a=>{if(!newest||(a.lastSeq||0)>(newest.lastSeq||0))newest=a;});
+    popupQueue=newest?[newest]:[];
     firstSalesLoad=false;
     if(popupQueue.length)processPopupQueue();
   }else{
