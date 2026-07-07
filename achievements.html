@@ -194,6 +194,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="footer" id="lastUpdated"></div>
 </div>
 
+<!-- New-sale celebration popup -->
+<div id="salesPopup" style="display:none" onclick="this.style.display='none'">
+  <div class="sp-card">
+    <div class="sp-badge">🎉 New Sale!</div>
+    <div class="sp-avatar" id="spAvatar"></div>
+    <div class="sp-name" id="spName"></div>
+    <div class="sp-sub" id="spSub"></div>
+    <div class="sp-amount" id="spAmount"></div>
+  </div>
+</div>
+<style>
+#salesPopup{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(3,7,18,.9);backdrop-filter:blur(6px);animation:spFade .3s ease}
+.sp-card{text-align:center;padding:48px 44px;border-radius:28px;background:linear-gradient(160deg,rgba(30,27,75,.96),rgba(15,23,42,.96));border:1px solid rgba(245,158,11,.45);box-shadow:0 0 90px rgba(245,158,11,.45);animation:spPop .6s cubic-bezier(.18,.89,.32,1.28);max-width:92vw}
+.sp-badge{display:inline-block;font-size:15px;font-weight:800;letter-spacing:.12em;color:#fcd34d;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);padding:7px 20px;border-radius:999px;margin-bottom:26px;text-transform:uppercase}
+.sp-avatar{width:170px;height:170px;border-radius:50%;margin:0 auto 24px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;color:white;overflow:hidden;border:4px solid rgba(245,158,11,.6);box-shadow:0 0 60px rgba(245,158,11,.5)}
+.sp-avatar img{width:100%;height:100%;object-fit:cover}
+.sp-name{font-size:40px;font-weight:800;color:white;margin-bottom:10px;line-height:1.1}
+.sp-sub{font-size:16px;color:#93c5fd;font-weight:600;margin-bottom:18px}
+.sp-amount{font-size:30px;font-weight:800;color:#6ee7b7}
+@keyframes spFade{from{opacity:0}to{opacity:1}}
+@keyframes spPop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+</style>
+
 <script>
 const SUPABASE_URL="https://snpbgypqxrwabxepdbbn.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucGJneXBxeHJ3YWJ4ZXBkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNTAxNTIsImV4cCI6MjA5ODcyNjE1Mn0.-ZVVueuhoiAB3cvVdmmf5GJFOxlYUKyRqsddCsns8po";
@@ -214,6 +237,13 @@ const DEPT_AVATAR_COLORS={
 };
 let photos={};
 let prevStreaks=0,prevBlitz=0;
+let domTeams={};
+const DOM_SETTINGS_GID="724700558";
+let seenTodayAgents=new Set();
+let firstSalesLoad=true;
+let lastSalesDay="";
+let popupQueue=[];
+let popupActive=false;
 
 function fmt(n){return"₱"+Math.round(n).toLocaleString("en-PH");}
 function getInitials(n){return n.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();}
@@ -223,7 +253,7 @@ function playGong(){
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
     // Master gain for overall volume boost
     const master=ctx.createGain();
-    master.gain.value=2.5; // LOUD
+    master.gain.value=4.0; // EXTRA LOUD
     master.connect(ctx.destination);
     // Multiple harmonics for deep resonant GONG
     [[55,4,1.0],[80,3.5,0.9],[110,3,0.7],[160,2.5,0.5],[220,2,0.3],[55,4,0.6],[80,4,0.5]].forEach(([f,d,v],i)=>{
@@ -262,6 +292,44 @@ async function loadPhotos(){
     const{data}=await sb.from("agent_photos").select("agent_name,photo_base64,photo_url");
     if(data)data.forEach(r=>{photos[r.agent_name.toUpperCase()]=r.photo_base64||r.photo_url||"";});
   }catch(e){}
+}
+
+// Load DOM agent -> 2026 team mapping from the DOM SETTINGS tab (col J=AGENTS, col K=2026 TEAMS)
+async function loadDomTeams(){
+  try{
+    const text=await fetchCSV(DOM_SETTINGS_GID);
+    if(!text)return;
+    const lines=text.trim().split("\n").filter(l=>l.trim());
+    for(let i=1;i<lines.length;i++){
+      const v=parseLine(lines[i]);
+      const name=(v[9]||"").trim();   // col J = AGENTS
+      const team=(v[10]||"").trim();  // col K = 2026 TEAMS
+      if(name&&team)domTeams[name.toUpperCase()]=team;
+    }
+  }catch(e){}
+}
+
+// Full-screen popup + loud gong when a brand-new agent appears in Sales of the Day
+function showSalesPopup(a){
+  return new Promise(resolve=>{
+    const pop=document.getElementById("salesPopup");
+    document.getElementById("spAvatar").innerHTML=a.photo?`<img src="${a.photo}" alt="${a.name}" onerror="this.style.display='none'">`:getInitials(a.name);
+    document.getElementById("spName").textContent=a.name;
+    document.getElementById("spSub").textContent=a.team?(a.dept+" · "+a.team):a.dept;
+    document.getElementById("spAmount").textContent=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";
+    pop.style.display="flex";
+    playGong();
+    setTimeout(()=>{pop.style.display="none";resolve();},4000);
+  });
+}
+async function processPopupQueue(){
+  if(popupActive)return;
+  popupActive=true;
+  while(popupQueue.length){
+    await showSalesPopup(popupQueue.shift());
+    await new Promise(r=>setTimeout(r,400));
+  }
+  popupActive=false;
 }
 
 async function fetchAllData(){
@@ -340,7 +408,7 @@ async function fetchAllData(){
         partVal.includes("TRAVEL INSURANCE");
       if(isExcluded)continue;
 
-      if(!agentData[nu])agentData[nu]={name,dept:deptName,days:{},todaySrp:0,monthlySrp:0,todayCount:0};
+      if(!agentData[nu])agentData[nu]={name,dept:deptName,team:(dept==="dom"?(domTeams[nu]||""):""),days:{},todaySrp:0,monthlySrp:0,todayCount:0};
       agentData[nu].days[dateKey]=(agentData[nu].days[dateKey]||0)+1;
       agentData[nu].monthlySrp+=srp;
       if(dateKey===todayStr){agentData[nu].todaySrp+=srp;agentData[nu].todayCount++;}
@@ -366,9 +434,9 @@ async function fetchAllData(){
   Object.entries(agentData).forEach(([nu,d])=>{
     const photo=photos[nu]||"";
     const streak=getStreak(d.days);
-    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu});
-    if(streak>=4)streaks.push({name:d.name,dept:d.dept,value:streak,photo});
-    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,value:d.todayCount,photo});
+    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu});
+    if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo});
+    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo});
   });
 
   todaySales.sort((a,b)=>b.todaySrp-a.todaySrp);
@@ -427,6 +495,7 @@ function renderContent({todaySales,streaks,blitz,todayStr}){
               <div class="mini-avatar" style="background:${bg}">${photoEl||getInitials(a.name)}</div>
               <div>
                 <div style="font-weight:600;color:white">${a.name}</div>
+                ${a.team?`<div style="font-size:11px;color:#93c5fd;font-weight:600;margin-top:1px">${a.team}</div>`:""}
                 ${a.todayCount>=4?'<span class="sales-count-pill">⚡ Blitz!</span>':""}
               </div>
             </div></td>
@@ -465,6 +534,7 @@ function renderContent({todaySales,streaks,blitz,todayStr}){
           <div class="avatar streak-av">${a.photo?`<img src="${a.photo}" alt="${a.name}" style="width:100%;height:100%;object-fit:cover">`:""}${!a.photo?getInitials(a.name):""}</div>
           <div class="ag-name">${a.name}</div>
           <div class="ag-dept">${a.dept}</div>
+          ${a.team?`<div class="ag-dept" style="color:#93c5fd;margin-top:2px">${a.team}</div>`:""}
           <div class="ach-val-box streak-val-box">
             <div class="ach-num streak-num">${a.value}</div>
             <div class="ach-lbl">Consecutive Days 🔥</div>
@@ -483,6 +553,7 @@ function renderContent({todaySales,streaks,blitz,todayStr}){
           <div class="avatar blitz-av">${a.photo?`<img src="${a.photo}" alt="${a.name}" style="width:100%;height:100%;object-fit:cover">`:""}${!a.photo?getInitials(a.name):""}</div>
           <div class="ag-name">${a.name}</div>
           <div class="ag-dept">${a.dept}</div>
+          ${a.team?`<div class="ag-dept" style="color:#93c5fd;margin-top:2px">${a.team}</div>`:""}
           <div class="ach-val-box blitz-val-box">
             <div class="ach-num blitz-num">${a.value}</div>
             <div class="ach-lbl">Sales Today ⚡</div>
@@ -498,12 +569,23 @@ async function loadAll(userTriggered=false){
   document.getElementById("liveText").textContent="Refreshing...";
   const today=new Date();
   document.getElementById("dateDisplay").textContent=today.toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-  await loadPhotos();
+  await Promise.all([loadPhotos(),loadDomTeams()]);
   const data=await fetchAllData();
   renderContent(data);
-  if(userTriggered){
-    if(data.streaks.length>prevStreaks)playGong();
-    else if(data.blitz.length>prevBlitz)playChime();
+  // ── New-sale celebration: full-screen popup + loud gong when a new agent appears ──
+  if(data.todayStr!==lastSalesDay){ // day rolled over → reset baseline
+    lastSalesDay=data.todayStr;
+    seenTodayAgents=new Set();
+    firstSalesLoad=true;
+  }
+  if(firstSalesLoad){
+    // First view of the day: seed silently, don't announce agents already listed
+    data.todaySales.forEach(a=>seenTodayAgents.add(a.nu));
+    firstSalesLoad=false;
+  }else{
+    const newcomers=data.todaySales.filter(a=>!seenTodayAgents.has(a.nu));
+    newcomers.forEach(a=>{seenTodayAgents.add(a.nu);popupQueue.push(a);});
+    if(newcomers.length)processPopupQueue();
   }
   prevStreaks=data.streaks.length;prevBlitz=data.blitz.length;
   const totalToday=data.todaySales.length;
