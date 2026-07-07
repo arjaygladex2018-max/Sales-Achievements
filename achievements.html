@@ -334,7 +334,7 @@ function showSalesPopup(a){
     document.getElementById("spAmount").textContent=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";
     pop.style.display="flex";
     playGong();
-    setTimeout(()=>{pop.style.display="none";resolve();},4000);
+    setTimeout(()=>{pop.style.display="none";resolve();},3000);
   });
 }
 async function processPopupQueue(){
@@ -593,11 +593,15 @@ async function loadAll(userTriggered=false){
     seenCounts={};
     firstSalesLoad=true;
   }
-  if(firstSalesLoad){
-    // First view of the day: seed silently so existing sales don't all announce at once
+  if(firstSalesLoad||userTriggered){
+    // Page open (or manual Refresh): announce ALL of today's sales in sequence,
+    // highest SRP first (todaySales is already sorted), each with a gong.
     data.todaySales.forEach(a=>{seenCounts[a.nu]=a.todayCount;});
+    popupQueue=data.todaySales.slice();
     firstSalesLoad=false;
+    if(popupQueue.length)processPopupQueue();
   }else{
+    // Background auto-refresh: only announce genuinely new sales since last check
     let queued=false;
     data.todaySales.forEach(a=>{
       const prev=seenCounts[a.nu]||0;
