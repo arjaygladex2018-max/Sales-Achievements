@@ -325,48 +325,15 @@ function playAirportChime(){
   }catch(e){}
 }
 
-// Applause / clapping — individual hand-clap transients from a long noise source
-// (random offsets + pitch so no two claps are identical), with a crowd rise/fade.
-function playApplause(dur){
+// Pick a Filipino voice if the device has one (else default voice reads it phonetically)
+function pickFilipinoVoice(){
   try{
-    const ctx=getAudioCtx();
-    if(!ctx)return;
-    dur=dur||6;
-    const now=ctx.currentTime;
-    const master=ctx.createGain();
-    master.connect(ctx.destination);
-    // Overall crowd envelope: quick swell in, sustain, gentle fade out
-    master.gain.setValueAtTime(0.0001,now);
-    master.gain.exponentialRampToValueAtTime(0.85,now+0.4);
-    master.gain.setValueAtTime(0.85,now+Math.max(0.5,dur-1.3));
-    master.gain.exponentialRampToValueAtTime(0.0001,now+dur);
-    // 1s of white noise reused with random start offsets → each clap is unique
-    const noiseLen=Math.floor(ctx.sampleRate);
-    const buffer=ctx.createBuffer(1,noiseLen,ctx.sampleRate);
-    const data=buffer.getChannelData(0);
-    for(let i=0;i<noiseLen;i++)data[i]=Math.random()*2-1;
-    const claps=Math.floor(dur*34); // density of the crowd
-    for(let k=0;k<claps;k++){
-      const t=now+Math.random()*dur;
-      const src=ctx.createBufferSource();
-      src.buffer=buffer;
-      src.playbackRate.value=0.8+Math.random()*0.7; // vary "pitch" per clap
-      const hp=ctx.createBiquadFilter();hp.type="highpass";hp.frequency.value=800+Math.random()*700; // snappy clap band
-      const g=ctx.createGain();
-      src.connect(hp);hp.connect(g);g.connect(master);
-      const amp=0.18+Math.random()*0.5;
-      const dec=0.045+Math.random()*0.05; // short, percussive
-      g.gain.setValueAtTime(0,t);
-      g.gain.linearRampToValueAtTime(amp,t+0.002);
-      g.gain.exponentialRampToValueAtTime(0.0008,t+dec);
-      const off=Math.random()*0.85; // random point in the noise buffer
-      src.start(t,off,dec+0.05);
-      src.stop(t+dec+0.06);
-    }
-  }catch(e){}
+    const vs=(window.speechSynthesis.getVoices()||[]);
+    return vs.find(v=>v.lang&&/^(fil|tl)/i.test(v.lang))||null;
+  }catch(e){return null;}
 }
 
-// Play the airport chime, speak the congratulations, then applause once it finishes
+// Airport chime → spoken congratulations → Taglish shout-out ("Gong mo na yan!")
 function announceSale(a){
   playAirportChime();
   try{
@@ -374,17 +341,20 @@ function announceSale(a){
       speechSynthesis.cancel(); // avoid overlap if several fire in a row
       const amount=Math.round(a.todaySrp).toLocaleString("en-US");
       const msg="Attention please! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos!";
-      const u=new SpeechSynthesisUtterance(msg);
-      u.rate=0.95;u.pitch=1.05;u.volume=1;
-      let clapped=false;
-      const clap=()=>{if(clapped)return;clapped=true;playApplause(7);};
-      u.onend=clap;u.onerror=clap;         // clap right after the announcement
-      setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){}},1000); // let the chime lead
-      setTimeout(clap,10000);              // fallback if onend never fires
-    }else{
-      setTimeout(()=>playApplause(7),2200); // no speech engine → clap after the chime
+      const shout="Shout out sayo, "+a.name+"! Gong mo na yan!";
+      const u1=new SpeechSynthesisUtterance(msg);
+      u1.rate=0.95;u1.pitch=1.05;u1.volume=1;
+      const u2=new SpeechSynthesisUtterance(shout);
+      u2.rate=0.98;u2.pitch=1.1;u2.volume=1;
+      const fv=pickFilipinoVoice();
+      if(fv){u2.voice=fv;u2.lang=fv.lang;}
+      let shouted=false;
+      const doShout=()=>{if(shouted)return;shouted=true;try{speechSynthesis.speak(u2);}catch(e){}};
+      u1.onend=doShout;u1.onerror=doShout;   // shout-out right after the announcement
+      setTimeout(()=>{try{speechSynthesis.speak(u1);}catch(e){}},1000); // let the chime lead
+      setTimeout(doShout,11000);             // fallback if onend never fires
     }
-  }catch(e){setTimeout(()=>playApplause(7),2200);}
+  }catch(e){}
 }
 
 async function fetchCSV(gid){
