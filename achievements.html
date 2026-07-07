@@ -258,8 +258,18 @@ function getAudioCtx(){
     return _audioCtx;
   }catch(e){return null;}
 }
-// Unlock/resume audio on the first user interaction (browsers require a gesture)
-["click","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,()=>{getAudioCtx();},{once:true}));
+// Unlock/resume audio + speech on the first user interaction (browsers require a gesture).
+// Every user's login click satisfies this, so they all get the popup + announcement.
+["click","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,()=>{
+  getAudioCtx();
+  try{
+    if("speechSynthesis" in window){
+      const warm=new SpeechSynthesisUtterance(" ");
+      warm.volume=0;
+      speechSynthesis.speak(warm); // prime the speech engine silently
+    }
+  }catch(e){}
+},{once:true}));
 
 function playGong(){
   try{
@@ -291,6 +301,42 @@ function playChime(){
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.4,t+.01);
       g.gain.exponentialRampToValueAtTime(.001,t+.8);o.start(t);o.stop(t+1);
     });
+  }catch(e){}
+}
+
+// Airport-style PA "bing-bong" chime (three soft bell tones)
+function playAirportChime(){
+  try{
+    const ctx=getAudioCtx();
+    if(!ctx)return;
+    const master=ctx.createGain();
+    master.gain.value=2.2;
+    master.connect(ctx.destination);
+    [[880,0],[1174.66,0.30],[783.99,0.60]].forEach(([f,delay])=>{ // A5, D6, G5
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type="sine";o.frequency.value=f;
+      o.connect(g);g.connect(master);
+      const t=ctx.currentTime+delay;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(1,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,t+1.2);
+      o.start(t);o.stop(t+1.3);
+    });
+  }catch(e){}
+}
+
+// Play the airport chime, then a spoken congratulations announcement for the agent
+function announceSale(a){
+  playAirportChime();
+  try{
+    if("speechSynthesis" in window){
+      speechSynthesis.cancel(); // avoid overlap if several fire in a row
+      const amount=Math.round(a.todaySrp).toLocaleString("en-US");
+      const msg="Attention please! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos!";
+      const u=new SpeechSynthesisUtterance(msg);
+      u.rate=0.95;u.pitch=1.05;u.volume=1;
+      setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){}},1000); // let the chime lead
+    }
   }catch(e){}
 }
 
@@ -333,8 +379,8 @@ function showSalesPopup(a){
     document.getElementById("spSub").textContent=a.team?(a.dept+" · "+a.team):a.dept;
     document.getElementById("spAmount").textContent=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";
     pop.style.display="flex";
-    playGong();
-    setTimeout(()=>{pop.style.display="none";resolve();},3000);
+    announceSale(a);
+    setTimeout(()=>{pop.style.display="none";resolve();},6000);
   });
 }
 async function processPopupQueue(){
