@@ -239,7 +239,7 @@ let photos={};
 let prevStreaks=0,prevBlitz=0;
 let domTeams={};
 const DOM_SETTINGS_GID="724700558";
-let seenTodayAgents=new Set();
+let seenCounts={};        // nu -> today's sale count already announced
 let firstSalesLoad=true;
 let lastSalesDay="";
 let popupQueue=[];
@@ -248,9 +248,23 @@ let popupActive=false;
 function fmt(n){return"₱"+Math.round(n).toLocaleString("en-PH");}
 function getInitials(n){return n.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();}
 
+// Single shared AudioContext — browsers cap the number of contexts, so we must
+// reuse one instead of creating a new one per sound (would break after ~6 gongs).
+let _audioCtx=null;
+function getAudioCtx(){
+  try{
+    if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(_audioCtx.state==="suspended")_audioCtx.resume();
+    return _audioCtx;
+  }catch(e){return null;}
+}
+// Unlock/resume audio on the first user interaction (browsers require a gesture)
+["click","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,()=>{getAudioCtx();},{once:true}));
+
 function playGong(){
   try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=getAudioCtx();
+    if(!ctx)return;
     // Master gain for overall volume boost
     const master=ctx.createGain();
     master.gain.value=4.0; // EXTRA LOUD
@@ -269,7 +283,8 @@ function playGong(){
   }catch(e){}
 }
 function playChime(){
-  try{const ctx=new(window.AudioContext||window.webkitAudioContext)();
+  try{const ctx=getAudioCtx();
+    if(!ctx)return;
     [523,659,784,1047].forEach((f,i)=>{
       const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
       o.frequency.value=f;o.type="sine";const t=ctx.currentTime+i*.15;
@@ -572,20 +587,24 @@ async function loadAll(userTriggered=false){
   await Promise.all([loadPhotos(),loadDomTeams()]);
   const data=await fetchAllData();
   renderContent(data);
-  // ── New-sale celebration: full-screen popup + loud gong when a new agent appears ──
+  // ── New-sale celebration: full-screen popup + loud gong on every new sale ──
   if(data.todayStr!==lastSalesDay){ // day rolled over → reset baseline
     lastSalesDay=data.todayStr;
-    seenTodayAgents=new Set();
+    seenCounts={};
     firstSalesLoad=true;
   }
   if(firstSalesLoad){
-    // First view of the day: seed silently, don't announce agents already listed
-    data.todaySales.forEach(a=>seenTodayAgents.add(a.nu));
+    // First view of the day: seed silently so existing sales don't all announce at once
+    data.todaySales.forEach(a=>{seenCounts[a.nu]=a.todayCount;});
     firstSalesLoad=false;
   }else{
-    const newcomers=data.todaySales.filter(a=>!seenTodayAgents.has(a.nu));
-    newcomers.forEach(a=>{seenTodayAgents.add(a.nu);popupQueue.push(a);});
-    if(newcomers.length)processPopupQueue();
+    let queued=false;
+    data.todaySales.forEach(a=>{
+      const prev=seenCounts[a.nu]||0;
+      if(a.todayCount>prev){popupQueue.push(a);queued=true;} // new agent OR an extra sale
+      seenCounts[a.nu]=a.todayCount;
+    });
+    if(queued)processPopupQueue();
   }
   prevStreaks=data.streaks.length;prevBlitz=data.blitz.length;
   const totalToday=data.todaySales.length;
