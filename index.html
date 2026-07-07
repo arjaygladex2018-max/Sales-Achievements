@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gladex Travel & Tours — Sales Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;min-height:100vh}
+input,select{font-family:inherit;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:#4f46e5!important}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#f1f1f1}
+::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#6b7280">⏳ Loading Gladex Dashboard...</div></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+// Charts powered by Chart.js (window.Chart)
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const INTL_AGENTS = [
+  { name:"Hazel Lamar",team:"TEAM YSA",status:"PROBI",target:210000,actual_gp:174377,actual_srp:871886,completion:83,dp:754247,combined_gp:325227,department:"MAIN INTERNATIONAL"},
+  { name:"Cristine Mae Ramirez",team:"TEAM PATRICIA",status:"Regular",target:210000,actual_gp:202492,actual_srp:1012461,completion:96,dp:557423,combined_gp:313977,department:"MAIN INTERNATIONAL"},
+  { name:"Aira Bernandez",team:"TEAM CRISSEL",status:"PROBI",target:210000,actual_gp:140868,actual_srp:704341,completion:67,dp:392573,combined_gp:219383,department:"MAIN INTERNATIONAL"},
+  { name:"Justin Kaye Daganta",team:"TEAM PATRICIA",status:"Regular",target:210000,actual_gp:65775,actual_srp:328876,completion:31,dp:206372,combined_gp:107050,department:"MAIN INTERNATIONAL"},
+  { name:"Kaylene Daluz",team:"TEAM PAULINE",status:"Regular",target:210000,actual_gp:109434,actual_srp:547168,completion:52,dp:71370,combined_gp:123708,department:"MAIN INTERNATIONAL"},
+  { name:"Juliana Yabut",team:"TEAM PATRICIA",status:"Regular",target:210000,actual_gp:157869,actual_srp:789343,completion:75,dp:457576,combined_gp:249384,department:"MAIN INTERNATIONAL"},
+  { name:"Patricia Kyle Castaneda",team:"TEAM CRISSEL",status:"PROBI",target:210000,actual_gp:161512,actual_srp:807561,completion:77,dp:639526,combined_gp:289417,department:"MAIN INTERNATIONAL"},
+  { name:"Nathanael Johann Sebastian",team:"TEAM CRISSEL",status:"Regular",target:210000,actual_gp:123510,actual_srp:617549,completion:59,dp:324534,combined_gp:188417,department:"MAIN INTERNATIONAL"},
+  { name:"Mary Joy De Vera",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:143350,actual_srp:716748,completion:68,dp:417136,combined_gp:226777,department:"MAIN INTERNATIONAL"},
+  { name:"Paige Viray",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:149969,actual_srp:749845,completion:71,dp:438933,combined_gp:237756,department:"MAIN INTERNATIONAL"},
+  { name:"Alyzza Joy Landicho",team:"TEAM PAULINE",status:"Regular",target:210000,actual_gp:123399,actual_srp:616993,completion:59,dp:63000,combined_gp:135999,department:"MAIN INTERNATIONAL"},
+  { name:"Moriel Cruz",team:"TEAM PATRICIA",status:"PROBI",target:210000,actual_gp:166195,actual_srp:830975,completion:79,dp:644995,combined_gp:295194,department:"MAIN INTERNATIONAL"},
+  { name:"Bianca Mae Timbre",team:"TEAM PATRICIA",status:"PROBI",target:210000,actual_gp:161504,actual_srp:807521,completion:77,dp:217286,combined_gp:204961,department:"MAIN INTERNATIONAL"},
+  { name:"Ella Ramos",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:146631,actual_srp:733153,completion:70,dp:179097,combined_gp:182450,department:"MAIN INTERNATIONAL"},
+  { name:"Henry Lim",team:"TEAM PAULINE",status:"Regular",target:210000,actual_gp:79415,actual_srp:397076,completion:38,dp:276460,combined_gp:134707,department:"MAIN INTERNATIONAL"},
+  { name:"Ruben Figueroa",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:96135,actual_srp:480675,completion:46,dp:722529,combined_gp:240641,department:"MAIN INTERNATIONAL"},
+  { name:"Malyn Marie Morales",team:"TEAM PATRICIA",status:"Regular",target:210000,actual_gp:89554,actual_srp:447768,completion:43,dp:275148,combined_gp:144583,department:"MAIN INTERNATIONAL"},
+  { name:"Rose Ann Valle",team:"TEAM CRISSEL",status:"PROBI",target:210000,actual_gp:207264,actual_srp:1036318,completion:99,dp:401876,combined_gp:287639,department:"MAIN INTERNATIONAL"},
+  { name:"Elijah Mikaela Abuan",team:"TEAM CRISSEL",status:"Regular",target:210000,actual_gp:99395,actual_srp:496977,completion:47,dp:0,combined_gp:0,department:"MAIN INTERNATIONAL"},
+  { name:"Alliah Cyrile Sunga",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:63642,actual_srp:318210,completion:30,dp:0,combined_gp:0,department:"MAIN INTERNATIONAL"},
+  { name:"Jhamie Lein Garin",team:"TEAM PAULINE",status:"PROBI",target:210000,actual_gp:34699,actual_srp:173494,completion:17,dp:0,combined_gp:0,department:"MAIN INTERNATIONAL"},
+  { name:"Rozhely Cornejo",team:"TEAM PAULINE",status:"PROBI",target:210000,actual_gp:28358,actual_srp:141790,completion:14,dp:0,combined_gp:0,department:"MAIN INTERNATIONAL"},
+  { name:"Rose Ann Valle",team:"TEAM CRISSEL",status:"PROBI",target:210000,actual_gp:207264,actual_srp:1036318,completion:99,dp:401876,combined_gp:287639,department:"MAIN INTERNATIONAL"},
+  { name:"Denise Ysabelle Casin",team:"TEAM YSA",status:"Regular",target:210000,actual_gp:21359,actual_srp:106797,completion:10,dp:0,combined_gp:0,department:"MAIN INTERNATIONAL"},
+];
+const DOM_AGENTS = [
+  { name:"Riannon Imperial",team:"TEAM RIANNON",status:"REGULAR",target:210000,actual_gp:289564,actual_srp:1447818,completion:138,dp:304172,combined_gp:350398,department:"MAIN DOMESTIC"},
+  { name:"Charles Lagria",team:"TEAM CHARLES",status:"REGULAR",target:210000,actual_gp:294013,actual_srp:1470066,completion:140,dp:280176,combined_gp:350048,department:"MAIN DOMESTIC"},
+  { name:"Sigrid Colyne Paz",team:"TEAM SIGRID",status:"REGULAR",target:189000,actual_gp:221344,actual_srp:1106721,completion:117,dp:481370,combined_gp:317618,department:"MAIN DOMESTIC"},
+  { name:"Shane Satentes",team:"TEAM SHANE",status:"REGULAR",target:210000,actual_gp:195963,actual_srp:979813,completion:93,dp:855005,combined_gp:366964,department:"MAIN DOMESTIC"},
+  { name:"Marilen Reynaldo",team:"TEAM MARILEN",status:"REGULAR",target:210000,actual_gp:188595,actual_srp:942973,completion:90,dp:258239,combined_gp:240242,department:"MAIN DOMESTIC"},
+  { name:"Joan Cervantes",team:"TEAM JOAN",status:"REGULAR",target:189000,actual_gp:170602,actual_srp:853011,completion:90,dp:45919,combined_gp:179786,department:"MAIN DOMESTIC"},
+  { name:"Jayrald Galleto",team:"TEAM JAYRALD",status:"REGULAR",target:189000,actual_gp:152783,actual_srp:763913,completion:81,dp:577006,combined_gp:268184,department:"MAIN DOMESTIC"},
+  { name:"Stacy Lumanog",team:"TEAM STACY",status:"REGULAR",target:189000,actual_gp:148249,actual_srp:741247,completion:78,dp:60294,combined_gp:160308,department:"MAIN DOMESTIC"},
+  { name:"Noel Sunga Jr",team:"TEAM NOEL",status:"REGULAR",target:210000,actual_gp:142392,actual_srp:711962,completion:68,dp:465352,combined_gp:235463,department:"MAIN DOMESTIC"},
+  { name:"Jessa G. Gorit",team:"TEAM JESSA",status:"REGULAR",target:210000,actual_gp:126327,actual_srp:631634,completion:60,dp:0,combined_gp:126327,department:"MAIN DOMESTIC"},
+  { name:"Kimberly Joy Verdeblanco",team:"TEAM KIMBERLY",status:"REGULAR",target:210000,actual_gp:125324,actual_srp:626619,completion:60,dp:136556,combined_gp:152635,department:"MAIN DOMESTIC"},
+  { name:"Kaye Therese Dedal",team:"TEAM KAYE",status:"REGULAR",target:210000,actual_gp:118600,actual_srp:593001,completion:56,dp:297436,combined_gp:178087,department:"MAIN DOMESTIC"},
+  { name:"Pia De Guzman",team:"TEAM PIA",status:"REGULAR",target:210000,actual_gp:102401,actual_srp:512005,completion:49,dp:127490,combined_gp:127899,department:"MAIN DOMESTIC"},
+  { name:"Laine Munez",team:"TEAM LAINE",status:"REGULAR",target:210000,actual_gp:53228,actual_srp:266139,completion:25,dp:164232,combined_gp:86074,department:"MAIN DOMESTIC"},
+  { name:"Rica Niepez",team:"TEAM RICA",status:"REGULAR",target:189000,actual_gp:35423,actual_srp:177115,completion:19,dp:36718,combined_gp:42767,department:"MAIN DOMESTIC"},
+  { name:"Kyla Mangao",team:"TEAM KYLA",status:"REGULAR",target:210000,actual_gp:36772,actual_srp:183858,completion:18,dp:333676,combined_gp:103507,department:"MAIN DOMESTIC"},
+  { name:"Alvaro Alba",team:"TEAM ALVARO",status:"REGULAR",target:210000,actual_gp:30818,actual_srp:154088,completion:15,dp:0,combined_gp:0,department:"MAIN DOMESTIC"},
+];
+const SM_AGENTS = [
+  { name:"Shiela",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:249719,actual_srp:1248596,completion:119,dp:914832,combined_gp:432686,department:"SM MANILA"},
+  { name:"Lovely",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:265904,actual_srp:1329518,completion:127,dp:571336,combined_gp:380171,department:"SM MANILA"},
+  { name:"Krylla",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:175958,actual_srp:879788,completion:84,dp:1386465,combined_gp:453251,department:"SM MANILA"},
+  { name:"Gene",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:161732,actual_srp:808662,completion:77,dp:376026,combined_gp:236938,department:"SM MANILA"},
+  { name:"Baye",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:149038,actual_srp:745189,completion:71,dp:242751,combined_gp:197588,department:"SM MANILA"},
+  { name:"Edmar",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:93769,actual_srp:468844,completion:45,dp:139445,combined_gp:121658,department:"SM MANILA"},
+  { name:"Marie",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:90847,actual_srp:454237,completion:43,dp:351219,combined_gp:161091,department:"SM MANILA"},
+  { name:"Jazzmine",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:63431,actual_srp:317156,completion:30,dp:0,combined_gp:0,department:"SM MANILA"},
+  // Additional agents from live sheet
+  { name:"Bianca Evangelista",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:282832,actual_srp:1414160,completion:135,dp:0,combined_gp:0,department:"SM MANILA"},
+  { name:"Norma De Leon / Anna Gatmaitan",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:245624,actual_srp:1228118,completion:117,dp:0,combined_gp:0,department:"SM MANILA"},
+  { name:"Isabelita Caunan",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:208215,actual_srp:1041073,completion:99,dp:0,combined_gp:0,department:"SM MANILA"},
+  { name:"Evelyn Navarro",team:"SM MANILA BRANCH",status:"REGULAR",target:210000,actual_gp:201108,actual_srp:1005538,completion:96,dp:0,combined_gp:0,department:"SM MANILA"},
+];
+const ROB_AGENTS = [
+  { name:"Maiko Neil Nuque",team:"ROBINSONS BRANCH",status:"REGULAR",target:210000,actual_gp:93300,actual_srp:466502,completion:44,dp:289590,combined_gp:151218,department:"ROBINSONS"},
+  { name:"Ashlyn Khye Oatis",team:"ROBINSONS BRANCH",status:"REGULAR",target:210000,actual_gp:98661,actual_srp:493306,completion:47,dp:368232,combined_gp:172308,department:"ROBINSONS"},
+  { name:"Mary Claire Fernandez",team:"ROBINSONS BRANCH",status:"REGULAR",target:210000,actual_gp:126811,actual_srp:634055,completion:60,dp:887155,combined_gp:304242,department:"ROBINSONS"},
+  { name:"Eleonor Dela Cruz",team:"ROBINSONS BRANCH",status:"REGULAR",target:210000,actual_gp:219306,actual_srp:1096532,completion:104,dp:652471,combined_gp:349801,department:"ROBINSONS"},
+  { name:"Jazzmine May Bustalina",team:"ROBINSONS BRANCH",status:"PROBI",target:210000,actual_gp:154343,actual_srp:771714,completion:73,dp:0,combined_gp:0,department:"ROBINSONS"},
+  { name:"Jeashree Porlas",team:"ROBINSONS BRANCH",status:"REGULAR",target:210000,actual_gp:145095,actual_srp:725477,completion:69,dp:0,combined_gp:0,department:"ROBINSONS"},
+];
+const CORP_AGENTS = [
+  { name:"Christian Borason",team:"CORP DEPT",status:"Regular",target:231000,actual_gp:166908,actual_srp:834538,completion:72,dp:58206,combined_gp:178549,department:"CORP"},
+  { name:"Jastine Jhoy Molina",team:"CORP DEPT",status:"Regular",target:231000,actual_gp:159810,actual_srp:799050,completion:69,dp:306997,combined_gp:221209,department:"CORP"},
+  { name:"Arcy Betito",team:"CORP DEPT",status:"Probationary",target:231000,actual_gp:138127,actual_srp:690633,completion:60,dp:559950,combined_gp:250117,department:"CORP"},
+  { name:"Coleen Cabral",team:"CORP DEPT",status:"Regular",target:231000,actual_gp:101731,actual_srp:508653,completion:44,dp:176321,combined_gp:136995,department:"CORP"},
+  { name:"Clarence Ocampo",team:"CORP DEPT",status:"Regular",target:231000,actual_gp:110289,actual_srp:551447,completion:48,dp:187175,combined_gp:147724,department:"CORP"},
+  { name:"Angela Obar",team:"CORP DEPT",status:"Regular",target:231000,actual_gp:71418,actual_srp:357089,completion:31,dp:54136,combined_gp:82245,department:"CORP"},
+];
+const DESTINATIONS=[
+  {destination:"Japan",srp:8420000,bookings:42,category:"International"},
+  {destination:"Korea",srp:6850000,bookings:38,category:"International"},
+  {destination:"Taiwan",srp:4200000,bookings:28,category:"International"},
+  {destination:"Hongkong",srp:3750000,bookings:25,category:"International"},
+  {destination:"Singapore",srp:3100000,bookings:22,category:"International"},
+  {destination:"Europe",srp:5600000,bookings:12,category:"International"},
+  {destination:"USA/Canada",srp:4900000,bookings:8,category:"International"},
+  {destination:"Boracay",srp:2800000,bookings:35,category:"Domestic"},
+  {destination:"Palawan",srp:3200000,bookings:40,category:"Domestic"},
+  {destination:"Siargao",srp:1900000,bookings:24,category:"Domestic"},
+  {destination:"Batanes",srp:1600000,bookings:18,category:"Domestic"},
+  {destination:"Cebu",srp:2100000,bookings:30,category:"Domestic"},
+  {destination:"Bohol",srp:1750000,bookings:22,category:"Domestic"},
+];
+const TEAM_PERF=[
+  {team:"Main International",total_srp:13626726,target:23100000,agents:22,completion:59,gp:2725345},
+  {team:"Main Domestic",total_srp:12161984,target:15750000,agents:17,completion:77,gp:2432397},
+  {team:"SM Manila",total_srp:6251990,target:8820000,agents:8,completion:71,gp:1250398},
+  {team:"Robinsons",total_srp:4187586,target:6300000,agents:6,completion:66,gp:837517},
+  {team:"Corp Dept",total_srp:3741410,target:6930000,agents:6,completion:54,gp:748282},
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const fmt = n => "₱"+Math.round(n).toLocaleString("en-PH");
+const COLORS=["#4f46e5","#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+
+// Chart.js Bar Chart component
+const BarChartCJ=({data,labelKey,valueKey,label,color="#4f46e5",height=260,formatter})=>{
+  const ref=React.useRef(null);
+  const inst=React.useRef(null);
+  React.useEffect(()=>{
+    if(!ref.current)return;
+    if(inst.current)inst.current.destroy();
+    inst.current=new Chart(ref.current,{
+      type:"bar",
+      data:{labels:data.map(d=>d[labelKey]),datasets:[{label,data:data.map(d=>d[valueKey]),backgroundColor:data.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:4,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>formatter?formatter(ctx.raw):"₱"+Math.round(ctx.raw).toLocaleString("en-PH")}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:"#f0f0f0"},ticks:{font:{size:11},callback:v=>"₱"+(v/1e6).toFixed(1)+"M"}}}}
+    });
+    return()=>{if(inst.current)inst.current.destroy();};
+  },[JSON.stringify(data)]);
+  return React.createElement("div",{style:{position:"relative",height}},React.createElement("canvas",{ref,role:"img","aria-label":label}));
+};
+
+// Chart.js Grouped Bar Chart
+const GroupedBarCJ=({data,height=250})=>{
+  const ref=React.useRef(null);
+  const inst=React.useRef(null);
+  React.useEffect(()=>{
+    if(!ref.current)return;
+    if(inst.current)inst.current.destroy();
+    inst.current=new Chart(ref.current,{
+      type:"bar",
+      data:{labels:data.map(d=>d.name),datasets:[{label:"Actual SRP",data:data.map(d=>d.SRP),backgroundColor:"#4f46e5",borderRadius:4},{label:"Target SRP",data:data.map(d=>d.Target),backgroundColor:"#e5e7eb",borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:"bottom",labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:ctx=>("₱"+ctx.raw+"M")}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:"#f0f0f0"},ticks:{font:{size:11},callback:v=>"₱"+v+"M"}}}}
+    });
+    return()=>{if(inst.current)inst.current.destroy();};
+  },[JSON.stringify(data)]);
+  return React.createElement("div",{style:{position:"relative",height}},React.createElement("canvas",{ref,role:"img","aria-label":"Team SRP vs Target"}));
+};
+
+// Chart.js GP Bar Chart
+const GPBarCJ=({data,height=250})=>{
+  const ref=React.useRef(null);
+  const inst=React.useRef(null);
+  React.useEffect(()=>{
+    if(!ref.current)return;
+    if(inst.current)inst.current.destroy();
+    inst.current=new Chart(ref.current,{
+      type:"bar",
+      data:{labels:data.map(d=>d.name),datasets:[{label:"Gross Profit",data:data.map(d=>d.GP),backgroundColor:"#10b981",borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>("₱"+ctx.raw+"M")}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:"#f0f0f0"},ticks:{font:{size:11},callback:v=>"₱"+v+"M"}}}}
+    });
+    return()=>{if(inst.current)inst.current.destroy();};
+  },[JSON.stringify(data)]);
+  return React.createElement("div",{style:{position:"relative",height}},React.createElement("canvas",{ref,role:"img","aria-label":"Gross Profit by Team"}));
+};
+
+// Chart.js Doughnut/Pie Chart
+const PieChartCJ=({data,height=260})=>{
+  const ref=React.useRef(null);
+  const inst=React.useRef(null);
+  React.useEffect(()=>{
+    if(!ref.current)return;
+    if(inst.current)inst.current.destroy();
+    inst.current=new Chart(ref.current,{
+      type:"doughnut",
+      data:{labels:data.map(d=>d.name),datasets:[{data:data.map(d=>d.value),backgroundColor:data.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:"white"}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:"bottom",labels:{font:{size:11},boxWidth:12,padding:8}},tooltip:{callbacks:{label:ctx=>(ctx.label+": ₱"+Math.round(ctx.raw).toLocaleString("en-PH")+" ("+Math.round(ctx.parsed/data.reduce((s,d)=>s+d.value,0)*100)+"%)")}}}}
+    });
+    return()=>{if(inst.current)inst.current.destroy();};
+  },[JSON.stringify(data)]);
+  return React.createElement("div",{style:{position:"relative",height}},React.createElement("canvas",{ref,role:"img","aria-label":"Top destinations by SRP"}));
+};
+const TEAM_COLORS={
+  // INTL teams
+  "TEAM PATRICIA":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM CRISSEL":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM PAULINE":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TEAM YSA":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TEAM PRINCESS":{bg:"#fff1f2",color:"#881337",border:"#f43f5e"},
+  // DOM tracker teams: "TEAM 1 - TL ELEONOR", "TEAM 2 - TL DAVE" etc
+  "TEAM 1 - TL ELEONOR":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM 1 - TL BIANCA":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM 2 - TL DAVE":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM 2 - TL ELEONOR":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM 3 - TL JAMHEL":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TEAM 4 - TL KAMS":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TEAM 5 - TL CED":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  // DOM Agent Progress teams
+  "TEAM SHANE":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM SIGRID":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM RIANNON":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TEAM CHARLES":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TEAM MARILEN":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "TEAM JOAN":{bg:"#fee2e2",color:"#991b1b",border:"#ef4444"},
+  "TEAM JAYRALD":{bg:"#f0fdf4",color:"#14532d",border:"#22c55e"},
+  "TEAM STACY":{bg:"#fff1f2",color:"#881337",border:"#f43f5e"},
+  "TEAM NOEL":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM JESSA":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM KIMBERLY":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TEAM KAYE":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TEAM PIA":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "TEAM LAINE":{bg:"#fff1f2",color:"#881337",border:"#f43f5e"},
+  "TEAM RICA":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM KYLA":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM ALVARO":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  // SM/ROB/CORP
+  "TEAM A":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "TEAM B":{bg:"#fee2e2",color:"#991b1b",border:"#ef4444"},
+  "SM MANILA BRANCH":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "ROBINSONS BRANCH":{bg:"#fee2e2",color:"#991b1b",border:"#ef4444"},
+  "CORP DEPT":{bg:"#f0fdf4",color:"#14532d",border:"#22c55e"},
+  // DOM Agent Progress team format
+  "TEAM TL - DAVE":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TEAM TL - JAMHEL":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TEAM TL - CED":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "TEAM TL - KAMS":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TEAM TL - ELEONOR":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+  "TEAM TL - BIANCA":{bg:"#fff1f2",color:"#881337",border:"#f43f5e"},
+  "TEAM - HYBRID":{bg:"#f3f4f6",color:"#374151",border:"#9ca3af"},
+  "TL DAVE":{bg:"#fce7f3",color:"#9d174d",border:"#ec4899"},
+  "TL JAMHEL":{bg:"#d1fae5",color:"#065f46",border:"#10b981"},
+  "TL CED":{bg:"#fef3c7",color:"#92400e",border:"#f59e0b"},
+  "TL KAMS":{bg:"#ede9fe",color:"#4c1d95",border:"#8b5cf6"},
+  "TL ELEONOR":{bg:"#dbeafe",color:"#1e40af",border:"#3b82f6"},
+};
+const DEPT_COLORS={
+  "MAIN INTERNATIONAL":{header:"#1e1b4b",accent:"#4f46e5"},
+  "MAIN DOMESTIC":{header:"#064e3b",accent:"#10b981"},
+  "SM MANILA":{header:"#78350f",accent:"#f59e0b"},
+  "ROBINSONS":{header:"#7f1d1d",accent:"#ef4444"},
+  "CORP":{header:"#14532d",accent:"#22c55e"},
+};
+const DEPT_TARGETS={intl:23100000,dom:15750000,sm:8820000,rob:6300000,corp:6930000};
+
+const Badge=({val})=>{
+  const c=val>=100?"#10b981":val>=75?"#f59e0b":"#ef4444";
+  const bg=val>=100?"#d1fae5":val>=75?"#fef3c7":"#fee2e2";
+  return <span style={{background:bg,color:c,fontWeight:700,fontSize:12,padding:"2px 8px",borderRadius:99}}>{val}%</span>;
+};
+const StatCard=({label,value,sub,color="#4f46e5"})=>(
+  <div style={{background:"white",borderRadius:10,padding:"16px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",borderLeft:("4px solid "+color)}}>
+    <div style={{fontSize:11,color:"#9ca3af",textTransform:"uppercase",letterSpacing:".05em",marginBottom:6}}>{label}</div>
+    <div style={{fontSize:22,fontWeight:700,color:"#111827"}}>{value}</div>
+    {sub&&<div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{sub}</div>}
+  </div>
+);
+const Tab=({label,active,onClick})=>(
+  <button onClick={onClick} style={{padding:"10px 18px",border:"none",borderBottom:active?"2px solid #4f46e5":"2px solid transparent",background:"none",color:active?"#4f46e5":"#6b7280",fontWeight:active?700:500,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>
+    {label}
+  </button>
+);
+
+// ─── AGENT TABLE ─────────────────────────────────────────────────────────────
+const AgentTable=({agents})=>{
+  const dept=agents[0]?.department||"";
+  const dc=DEPT_COLORS[dept]||{header:"#1e1b4b",accent:"#4f46e5"};
+  const grouped=agents.reduce((acc,a)=>{const t=a.team||"—";if(!acc[t])acc[t]=[];acc[t].push(a);return acc;},{});
+  const rowBg=c=>c>=100?"#f0fdf4":c>=75?"#fffbeb":c>=50?"#fff7ed":"#fff1f2";
+  const rowBorder=c=>c>=100?"#10b981":c>=75?"#f59e0b":c>=50?"#f97316":"#ef4444";
+  const gapStyle=c=>({background:c>=100?"#d1fae5":c>=75?"#fef3c7":c>=50?"#ffedd5":"#fee2e2",color:c>=100?"#065f46":c>=75?"#92400e":c>=50?"#9a3412":"#991b1b",fontWeight:700,padding:"3px 8px",borderRadius:6,fontSize:12});
+  return(
+    <div style={{overflowX:"auto"}}>
+      <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+        {[{c:"#10b981",l:"Hit Target (≥100%)"},{c:"#f59e0b",l:"Near Target (75-99%)"},{c:"#f97316",l:"Below Target (50-74%)"},{c:"#ef4444",l:"Critical Gap (<50%)"}].map((x,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#374151"}}>
+            <div style={{width:12,height:12,borderRadius:2,background:x.c}}></div>{x.l}
+          </div>
+        ))}
+      </div>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+        <thead>
+          <tr style={{background:dc.header}}>
+            {["Agent Name","Team","Status","GP Target","Actual GP","Actual SRP","%","GP Gap","Down Payment","Combined GP"].map((h,i)=>(
+              <th key={i} style={{padding:"10px 12px",color:"white",fontWeight:600,textAlign:i>2?"right":"left",whiteSpace:"nowrap"}}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(grouped).map(([tname,members])=>{
+            const tc=TEAM_COLORS[tname]||{bg:"#f3f4f6",color:"#374151",border:"#9ca3af"};
+            const ttotal=members.reduce((s,m)=>s+m.actual_gp,0);
+            const ttgt=members.reduce((s,m)=>s+m.target,0);
+            const tgap=ttotal-ttgt;
+            return[
+              <tr key={("hdr-"+tname)} style={{background:tc.bg,borderTop:("2px solid "+tc.border),borderBottom:("1px solid "+tc.border)}}>
+                <td colSpan={3} style={{padding:"8px 12px",fontWeight:700,color:tc.color,fontSize:13}}>
+                  <span style={{background:tc.border,color:"white",padding:"3px 10px",borderRadius:99,fontSize:11,marginRight:8}}>{tname}</span>
+                  {members.length} agents
+                </td>
+                <td style={{padding:"8px 12px",textAlign:"right",color:tc.color,fontWeight:600,fontSize:12}}>{fmt(ttgt)}</td>
+                <td style={{padding:"8px 12px",textAlign:"right",color:tc.color,fontWeight:700,fontSize:12}}>{fmt(ttotal)}</td>
+                <td colSpan={2} style={{padding:"8px 12px"}}></td>
+                <td style={{padding:"8px 12px",textAlign:"right"}}>
+                  <span style={{background:tgap>=0?"#d1fae5":"#fee2e2",color:tgap>=0?"#065f46":"#991b1b",fontWeight:700,padding:"2px 8px",borderRadius:6,fontSize:12}}>
+                    {tgap>=0?"+":""}{fmt(tgap)}
+                  </span>
+                </td>
+                <td colSpan={2}></td>
+              </tr>,
+              ...[...members].sort((a,b)=>b.actual_gp-a.actual_gp).map((a,i)=>{
+                const gap=a.actual_gp-a.target;
+                return(
+                  <tr key={(tname+"-"+i)} style={{borderBottom:"1px solid #f3f4f6",background:rowBg(a.completion),borderLeft:("4px solid "+rowBorder(a.completion))}}>
+                    <td style={{padding:"10px 12px 10px 16px",fontWeight:700,color:"#111827"}}>{a.name}</td>
+                    <td style={{padding:"10px 12px"}}>
+                      <span style={{background:tc.bg,color:tc.color,border:("1px solid "+tc.border),fontSize:10,padding:"2px 7px",borderRadius:99,fontWeight:600,whiteSpace:"nowrap"}}>{tname}</span>
+                    </td>
+                    <td style={{padding:"10px 12px"}}>
+                      <span style={{background:a.status==="PROBI"||a.status==="Probationary"?"#fef3c7":"#ede9fe",color:a.status==="PROBI"||a.status==="Probationary"?"#92400e":"#5b21b6",fontSize:11,padding:"2px 8px",borderRadius:99,fontWeight:600}}>{a.status}</span>
+                    </td>
+                    <td style={{padding:"10px 12px",textAlign:"right",color:"#6b7280"}}>{fmt(a.target)}</td>
+                    <td style={{padding:"10px 12px",textAlign:"right",fontWeight:700,color:"#111827"}}>{fmt(a.actual_gp)}</td>
+                    <td style={{padding:"10px 12px",textAlign:"right",color:"#374151"}}>{fmt(a.actual_srp)}</td>
+                    <td style={{padding:"10px 12px",textAlign:"center"}}><Badge val={a.completion}/></td>
+                    <td style={{padding:"10px 12px",textAlign:"right"}}><span style={gapStyle(a.completion)}>{gap>=0?"+":""}{fmt(gap)}</span></td>
+                    <td style={{padding:"10px 12px",textAlign:"right",color:"#6b7280"}}>{a.dp>0?fmt(a.dp):"—"}</td>
+                    <td style={{padding:"10px 12px",textAlign:"right",fontWeight:600,color:dc.accent}}>{a.combined_gp>0?fmt(a.combined_gp):"—"}</td>
+                  </tr>
+                );
+              })
+            ];
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// ─── TEAM MAPS (GLOBAL) ──────────────────────────────────────────────────────
+const DOM_TEAM_MAP={
+  // Maps agent names to DOM Sales Tracker team format (Col S)
+  // Format: "TEAM TL - [NAME]" or "TEAM - HYBRID"
+  "SHANE SATENTES":"TEAM TL - JAMHEL","SHANE":"TEAM TL - JAMHEL",
+  "SIGRID COLYNE NAOMI PAZ":"TEAM TL - JAMHEL","SIGRID":"TEAM TL - JAMHEL",
+  "CHARLES LAGRIA":"TEAM TL - DAVE","CHARLES":"TEAM TL - DAVE",
+  "RIANNON MARGEAUX CASSANDRA IMPERIAL":"TEAM - HYBRID","RIANNON IMPERIAL":"TEAM - HYBRID","RIANNON":"TEAM - HYBRID",
+  "NOEL SUNGA JR":"TEAM TL - JAMHEL","NOEL SUNGA JR - DOM":"TEAM TL - JAMHEL","NOEL":"TEAM TL - JAMHEL",
+  "MARILEN REYNALDO":"TEAM - HYBRID","MARILEN":"TEAM - HYBRID",
+  "JAYRALD GALLETO":"TEAM TL - CED","JAYRALD":"TEAM TL - CED",
+  "JOAN CERVANTES":"TEAM TL - KAMS","JOAN":"TEAM TL - KAMS",
+  "PIA DE GUZMAN":"TEAM TL - CED","PIA":"TEAM TL - CED",
+  "KIMBERLY JOY VERDEBLANCO":"TEAM TL - KAMS","KIMBERLY":"TEAM TL - KAMS",
+  "STACY LUMANOG":"TEAM TL - DAVE","STACY":"TEAM TL - DAVE",
+  "JESSA G. GORIT":"TEAM TL - JAMHEL","JESSA GORIT":"TEAM TL - JAMHEL","JESSA":"TEAM TL - JAMHEL",
+  "KAYE THERESE DEDAL":"TEAM - HYBRID","KAYE":"TEAM - HYBRID",
+  "LAINE MUNEZ":"TEAM TL - CED","LAINE":"TEAM TL - CED",
+  "ALVARO ALBA":"TEAM - HYBRID","ALVARO":"TEAM - HYBRID",
+  "RICA NIEPEZ":"TEAM TL - KAMS","RICA":"TEAM TL - KAMS",
+  "KYLA MANGAO":"TEAM TL - DAVE","KYLA":"TEAM TL - DAVE",
+  "DAVE ANGELO RENDAL":"TEAM TL - DAVE","DAVE":"TEAM TL - DAVE",
+  "JAMHEL MENDOZA_DOM":"TEAM TL - JAMHEL","JAMHEL":"TEAM TL - JAMHEL",
+  "CEDIE CAMORONGAN":"TEAM TL - CED","CEDIE":"TEAM TL - CED",
+  "MIKHAELA":"TEAM TL - JAMHEL","BRI":"TEAM TL - CED","SHY":"TEAM TL - DAVE",
+  "JASON":"TEAM TL - ELEONOR","JEM":"TEAM TL - JAMHEL","BIANCA":"TEAM TL - BIANCA",
+  "BELLE":"TEAM TL - ELEONOR","ELLEONOR":"TEAM TL - ELEONOR","NACE":"TEAM TL - KAMS",
+  "RIZZA":"TEAM TL - CED","JOANA":"TEAM TL - JAMHEL","JOHN":"TEAM TL - ELEONOR","AILEEN":"TEAM TL - KAMS",
+};
+
+const ROB_TEAM_MAP={
+  "MAIKO NEIL NUQUE":"ROBINSONS BRANCH","ASHLYN KHYE OATIS":"ROBINSONS BRANCH",
+  "MARY CLAIRE FERNANDEZ":"ROBINSONS BRANCH","ELEONOR DELA CRUZ":"ROBINSONS BRANCH",
+  "JAZZMINE MAY BUSTALINA":"ROBINSONS BRANCH","JEASHREE PORLAS":"ROBINSONS BRANCH",
+  "CHELLEA BEJEC":"ROBINSONS BRANCH","ANGEL MONTENEGRO":"ROBINSONS BRANCH",
+  "ISRAFIL TAGULAO":"ROBINSONS BRANCH","ASHLYN":"ROBINSONS BRANCH",
+  "MAIKO":"ROBINSONS BRANCH","MARY CLAIRE":"ROBINSONS BRANCH",
+};
+
+// ─── AGENT PHOTOS ────────────────────────────────────────────────────────────
+// Loaded from localStorage — shared with photo-manager.html (same domain)
+// Upload photos at: [your-vercel-url]/photo-manager.html
+const AGENT_PHOTOS=(()=>{
+  try{const s=localStorage.getItem('gladex_agent_photos');return s?JSON.parse(s):{};
+  }catch(e){return{};}
+})();
+
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────────────────
+const SUPABASE_URL="https://snpbgypqxrwabxepdbbn.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucGJneXBxeHJ3YWJ4ZXBkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNTAxNTIsImV4cCI6MjA5ODcyNjE1Mn0.-ZVVueuhoiAB3cvVdmmf5GJFOxlYUKyRqsddCsns8po";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+console.log("✅ Supabase connected:",SUPABASE_URL);
+
+function App(){
+  const [activeTab,setActiveTab]=useState("intl");
+  const [destFilter,setDestFilter]=useState("All");
+  const [search,setSearch]=useState("");
+  const [period,setPeriod]=useState("monthly");
+  const [teamFilter,setTeamFilter]=useState("All");
+  const [progressDeptFilter,setProgressDeptFilter]=useState("All");
+  const [showSalesAlert,setShowSalesAlert]=useState(false);
+  const [salesAlertData,setSalesAlertData]=useState(null);
+  const [alertHistory,setAlertHistory]=useState([]);
+  const [syncStatus,setSyncStatus]=useState("idle");
+  const [lastSync,setLastSync]=useState(null);
+  const [countdown,setCountdown]=useState(60);
+  const [agents,setAgents]=useState({intl:INTL_AGENTS,dom:DOM_AGENTS,sm:SM_AGENTS,rob:ROB_AGENTS,corp:CORP_AGENTS});
+  // SEPARATE STATE for Agent Progress tab — never overwrites per-dept agents
+  const [progressAgents,setProgressAgents]=useState([]);
+  const [progressMonth,setProgressMonth]=useState(CURRENT_MONTH);
+
+  const SHEET_ID="1giaUbA2D2s5M9IzMOy85FpQL8u86YcyqVMzB5wZy1EY";
+  const GID="140575773";
+
+  // Fetch via API proxy first, fallback to direct Google Sheets URL
+  const fetchCSV=async(gid)=>{
+    try{
+      const r=await fetch("/api/sheets?gid="+gid);
+      if(r.ok){const t=await r.text();if(t&&t.length>100)return t;}
+    }catch(e){}
+    try{
+      const url="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/export?format=csv&gid="+gid;
+      const r=await fetch(url);
+      if(r.ok)return await r.text();
+    }catch(e){}
+    throw new Error("Cannot fetch sheet gid="+gid);
+  };
+
+  // Shared CSV line parser
+  const parseCSVLine=(line)=>{
+    const vals=[];let cur="",inQ=false;
+    for(const c of line){if(c==='"')inQ=!inQ;else if(c===","&&!inQ){vals.push(cur.replace(/"/g,"").trim());cur="";}else cur+=c;}
+    vals.push(cur.replace(/"/g,"").trim());
+    return vals;
+  };
+
+  const toN=v=>parseFloat((v||"0").replace(/[₱,\s%]/g,""))||0;
+
+  // Shared parse function for AGENT PROGRESS (UPDATED) sheet
+  const parseAgentProgressSheet=(text)=>{
+    const lines=text.trim().split("\n").filter(l=>l.trim());
+    if(lines.length<5)return null;
+
+    // Scan first 10 rows to find the NAME header row
+    let nameCol=0,statusCol=2,tgtCol=3,gpCol=6,srpCol=9,compCol=7,teamColAP=-1,dataStart=1;
+    for(let i=0;i<Math.min(10,lines.length);i++){
+      const v=parseCSVLine(lines[i]).map(x=>x.toUpperCase().trim());
+      if(v.includes("NAME")){
+        nameCol=v.findIndex(x=>x==="NAME");
+        const si=v.findIndex(x=>x.includes("STATUS")&&!x.includes("MONTH"));if(si>=0)statusCol=si;
+        const ti=v.findIndex(x=>x.includes("TARGET")&&x.includes("GROSS"));if(ti>=0)tgtCol=ti;
+        const gi=v.findIndex(x=>x.includes("ACTUAL")&&x.includes("GROSS"));if(gi>=0)gpCol=gi;
+        const ri=v.findIndex(x=>x.includes("ACTUAL")&&x.includes("SRP")&&x.includes("MONTH"));
+        const ri2=v.findIndex(x=>x.includes("ACTUAL MONTH TO DATE SRP"));
+        srpCol=ri>=0?ri:(ri2>=0?ri2:9);
+        const ci=v.findIndex(x=>x.includes("COMPLETION")&&x.includes("MONTHLY"));if(ci>=0)compCol=ci;
+        const tmi=v.findIndex(x=>x==="TEAM"||x==="TEAMS"||x==="TL"||x==="TEAM LEADER");if(tmi>=0)teamColAP=tmi;
+        dataStart=i+1;
+        break;
+      }
+    }
+
+    const buckets={intl:[],dom:[],sm:[],rob:[],corp:[]};
+    let sec="";
+
+    for(let i=dataStart;i<lines.length;i++){
+      const vals=parseCSVLine(lines[i]);
+      const rowStr=vals.join(" ").toUpperCase();
+
+      // Section header detection — be broad, check full row
+      if(rowStr.includes("MAIN INTERNATIONAL")&&!rowStr.includes("₱")){sec="intl";continue;}
+      if(rowStr.includes("MAIN DOMESTIC")&&!rowStr.includes("₱")){sec="dom";continue;}
+      if((rowStr.includes("SM MANILA")||rowStr.includes("SM MANILA BRANCH"))&&!rowStr.includes("₱")){sec="sm";continue;}
+      if(rowStr.includes("ROBINSON")&&!rowStr.includes("₱")){sec="rob";continue;}
+      // Corp — match many variations: CORP DEPT, CORPORATE, CORP DEPARTMENT, CORP only
+      if((rowStr.includes("CORP DEPT")||rowStr.includes("CORPORATE")||rowStr.includes("CORP DEPARTMENT")||
+         (rowStr.includes("CORP")&&!rowStr.includes("INCORPORAT")))&&!rowStr.includes("₱")){
+        console.log("Corp section found at row "+i+": "+vals.slice(0,3).join("|"));
+        sec="corp";continue;
+      }
+      if(!sec)continue;
+
+      const name=(vals[nameCol]||vals[0]||"").trim();
+      if(!name)continue;
+      const nu=name.toUpperCase();
+      // Skip header/summary rows
+      if(nu==="NAME"||nu.includes("GRAND TOTAL")||nu.includes("SEND THIS")||
+         nu.includes("NOTE:")||nu.includes("TOTAL AGENTS")||nu.includes("AMOUNTS")||
+         nu.includes("HARD CODED")||nu.includes("FORMULATED")||nu.includes("AGENT TARGET"))continue;
+      if(name.length>80||/^[0-9]/.test(name))continue;
+
+      const status=(vals[statusCol]||vals[2]||"Regular").trim();
+      if(status.toUpperCase().includes("STATUS")||status.toUpperCase().includes("REGULAR/PROBI")||
+         status.toUpperCase().includes("HARD CODED")||status.toUpperCase().includes("FORMULATED"))continue;
+
+      const tgt=toN(vals[tgtCol]||"0")||210000;
+      const gp=toN(vals[gpCol]||"0");
+      const srp=toN(vals[srpCol]||"0");
+      if(gp<=0&&srp<=0)continue;
+
+      const rawComp=(vals[compCol]||"").replace(/[%\s]/g,"");
+      const comp=parseFloat(rawComp)||Math.round((gp/tgt)*100);
+      const deptNames={intl:"MAIN INTERNATIONAL",dom:"MAIN DOMESTIC",sm:"SM MANILA",rob:"ROBINSONS",corp:"CORP"};
+      const apTeam=teamColAP>=0?(vals[teamColAP]||"").trim():"";
+      // SM: use smTeamMap (TEAM A/TEAM B from SM Explorer)
+      // DOM: use apTeam from sheet (TEAM TL - XXX format) then DOM_TEAM_MAP
+      // INTL: use INTL_TEAM_MAP then apTeam
+      // ROB: always ROBINSONS BRANCH
+      // CORP: always CORP DEPT
+      const smT=smTeamMap[nu]||(apTeam&&(apTeam==="TEAM A"||apTeam==="TEAM B")?apTeam:"SM MANILA BRANCH");
+      const teamName=
+        sec==="intl"?(INTL_TEAM_MAP[nu]||apTeam||"—"):
+        sec==="dom"?(apTeam&&apTeam.includes("TEAM")?apTeam:DOM_TEAM_MAP[nu]||apTeam||"—"):
+        sec==="sm"?smT:
+        sec==="rob"?"ROBINSONS BRANCH":
+        sec==="corp"?"CORP DEPT":"—";
+
+      buckets[sec].push({
+        name,team:teamName,status:status||"Regular",target:tgt,
+        actual_gp:gp,actual_srp:srp,
+        completion:Math.abs(comp)>500?Math.round((gp/tgt)*100):Math.abs(comp),
+        dp:toN(vals[10]||"0"),combined_gp:toN(vals[11]||"0"),
+        department:deptNames[sec]
+      });
+    }
+
+    // Deduplicate each bucket
+    const result={};
+    Object.entries(buckets).forEach(([k,v])=>{
+      const seen=new Set();
+      result[k]=v.filter(a=>{
+        if(seen.has(a.name.toUpperCase()))return false;
+        seen.add(a.name.toUpperCase());return true;
+      });
+    });
+    const total=Object.values(result).reduce((s,v)=>s+v.length,0);
+    console.log("parseAgentProgressSheet: "+total+" agents — "+Object.entries(result).map(([k,v])=>k+":"+v.length).join(", "));
+    return total>0?result:null;
+  };
+
+  // Month GID map — each month has its own sheet tab
+  // Current month = AGENT PROGRESS (UPDATED), past months from LEADERBOARD REPORT or monthly tabs
+  const MONTH_GIDS={
+    "Jun 2026":"140575773",  // AGENT PROGRESS (UPDATED) — current
+    "May 2026":"140575773",  // Will filter by MONTHLY col = 2026-05
+    "Apr 2026":"140575773",
+    "Mar 2026":"140575773",
+    "Feb 2026":"140575773",
+    "Jan 2026":"140575773",
+  };
+  const MONTH_LIST=Object.keys(MONTH_GIDS);
+  // Dynamic current month label
+  const nowInit=new Date();
+  const monthNamesArr=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const CURRENT_MONTH=monthNamesArr[nowInit.getMonth()]+" "+nowInit.getFullYear();
+  const [selectedMonth,setSelectedMonth]=useState(CURRENT_MONTH);
+  const [monthLoading,setMonthLoading]=useState(false);
+  const INTL_TEAM_MAP={
+    // TEAM YSA
+    "HAZEL LAMAR":"TEAM YSA","MARY JOY DE VERA":"TEAM YSA","PAIGE VIRAY":"TEAM YSA",
+    "RUBEN FIGUEROA":"TEAM YSA","ELLA RAMOS":"TEAM YSA","ALLIAH CYRILE SUNGA":"TEAM YSA",
+    "DENISE YSABELLE CASIN":"TEAM YSA","CHESKA KEITH GUINTO QUINTOS":"TEAM YSA",
+    "ANGEL ALCANTARA":"TEAM YSA","ANNA MORTALLA":"TEAM YSA","TL YSABELLE":"TEAM YSA",
+    "ALLIAH":"TEAM YSA","ELLA":"TEAM YSA","MJAY":"TEAM YSA","CHRISTIAN":"TEAM YSA",
+    "ASHLY":"TEAM YSA","ANNA":"TEAM YSA","RONA":"TEAM YSA","ANGEL":"TEAM YSA","GREENE":"TEAM YSA",
+    // TEAM PATRICIA
+    "CRISTINE MAE RAMIREZ":"TEAM PATRICIA","JULIANA YABUT":"TEAM PATRICIA",
+    "MORIEL CRUZ":"TEAM PATRICIA","BIANCA MAE TIMBRE":"TEAM PATRICIA",
+    "MALYN MARIE MORALES":"TEAM PATRICIA","JOHN ANTHONY CLEMENTE":"TEAM PATRICIA",
+    "PAULINE KATE PASTORIN":"TEAM PATRICIA","PATRICIA ANDRES":"TEAM PATRICIA",
+    "JUSTIN KAYE DAGANTA":"TEAM PATRICIA","TL PATRICIA":"TEAM PATRICIA",
+    "CRISTINE":"TEAM PATRICIA","MORIEL":"TEAM PATRICIA","BIANCA":"TEAM PATRICIA",
+    // TEAM CRISSEL
+    "AIRA BERNANDEZ":"TEAM CRISSEL","PATRICIA KYLE CASTANEDA":"TEAM CRISSEL",
+    "NATHANAEL JOHANN SEBASTIAN":"TEAM CRISSEL","ROSE ANN VALLE":"TEAM CRISSEL",
+    "ELIJAH MIKAELA ABUAN":"TEAM CRISSEL","JESSA MAE AMANTE":"TEAM CRISSEL",
+    "EDMAR MENDOZA":"TEAM CRISSEL","FERNAN A. SANTIAGO JR":"TEAM CRISSEL",
+    "CRISSEL ANN MENDOZA":"TEAM CRISSEL","TL CRISSEL":"TEAM CRISSEL",
+    "AIRA":"TEAM CRISSEL","FERNAN":"TEAM CRISSEL","BEN FURY":"TEAM CRISSEL","CHESKA":"TEAM CRISSEL",
+    // TEAM PAULINE
+    "KAYLENE DALUZ":"TEAM PAULINE","ALYZZA JOY LANDICHO":"TEAM PAULINE",
+    "HENRY LIM":"TEAM PAULINE","JHAMIE LEIN GARIN":"TEAM PAULINE",
+    "ROZHELY CORNEJO":"TEAM PAULINE","LORAINE TAGALOG":"TEAM PAULINE",
+    "DIANNE BALUYUT":"TEAM PAULINE","KHYLA MARIE MARASIGAN":"TEAM PAULINE",
+    "ASHLEY JHULYN E. BROBIO":"TEAM PAULINE","JERMAINE MENDOZA":"TEAM PAULINE",
+    "ELLAINE TUDIA":"TEAM PAULINE","JERALDINE DAGOHOY":"TEAM PAULINE",
+    "KENNY GREEN RAMOS":"TEAM PAULINE","TL JAMHEL":"TEAM PAULINE",
+    "ALYZZA":"TEAM PAULINE","JHAMIE":"TEAM PAULINE","KAYLENE":"TEAM PAULINE",
+    // TEAM PRINCESS
+    "JAIDEN PRINCESS CASTILLO":"TEAM PRINCESS","KYLE":"TEAM PRINCESS",
+    "JESSA MAE":"TEAM PRINCESS","TL JAIDEN":"TEAM PRINCESS",
+  };
+
+  // Fetch from INTL SALES TRACKER (gid=49701909) and filter by month for historical data
+  const TRACKER_GIDS={
+    intl:"49701909",
+    dom:"303720486",
+    sm:"1219207482",
+    rob:"1930931831",
+    corp:"1586893116",
+  };
+
+  // Map month label to MONTHLY column value in trackers (format: 2026-06 (Jun))
+  // Dynamic MONTH_CODE_MAP — generates "Jan 2025" -> "2025-01" mappings
+  const MONTH_CODE_MAP=(()=>{
+    const map={};
+    const mnames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    for(let y=2024;y<=2027;y++){
+      for(let m=0;m<12;m++){
+        const label=mnames[m]+" "+y;
+        const code=y+"-"+String(m+1).padStart(2,"0");
+        map[label]=code;
+      }
+    }
+    return map;
+  })();
+
+  const parseTrackerCSV=(text,monthCode,deptKey)=>{
+    const lines=text.trim().split("\n").filter(l=>l.trim());
+    if(lines.length<2)return[];
+    const headers=parseCSVLine(lines[0]);
+    // Find columns flexibly
+    const agentCol=headers.findIndex(h=>/^agent$/i.test(h.trim())||/^agents$/i.test(h.trim()));
+    const srpCol=headers.findIndex(h=>/^srp$/i.test(h.trim()));
+    const monthlyCol=headers.findIndex(h=>/^monthly$/i.test(h.trim()));
+    const teamCol=headers.findIndex(h=>/^teams?$/i.test(h.trim()));
+    if(agentCol<0||srpCol<0||monthlyCol<0)return[];
+
+    const agentMap={};
+    for(const line of lines.slice(1)){
+      const vals=parseCSVLine(line);
+      const getV=i=>(vals[i]||"").trim();
+      // Match MONTHLY column — format is "2026-06 (Jun)" or "2026-06"
+      const monthly=getV(monthlyCol);
+      if(!monthly.includes(monthCode))continue;
+      const agentName=getV(agentCol);
+      if(!agentName||agentName.toUpperCase()==="AGENT"||agentName.length>60)continue;
+      const srp=toN(getV(srpCol));
+      if(srp<=0)continue;
+      const team=teamCol>=0?getV(teamCol):"";
+      if(!agentMap[agentName])agentMap[agentName]={name:agentName,srp:0,team};
+      agentMap[agentName].srp+=srp;
+      if(team&&!agentMap[agentName].team)agentMap[agentName].team=team;
+    }
+    const deptNames={intl:"MAIN INTERNATIONAL",dom:"MAIN DOMESTIC",sm:"SM MANILA",rob:"ROBINSONS",corp:"CORP"};
+    return Object.values(agentMap).map(a=>{
+      const estGP=Math.round(a.srp*0.2);
+      const tgt=deptKey==="corp"?231000:210000;
+      return{
+        name:a.name,
+        team:INTL_TEAM_MAP[a.name.toUpperCase()]||(deptKey==="sm"?(smTeamMap[nu2]||smTeamMap[a.name.split(" ")[0].toUpperCase()]||a.team||"SM MANILA BRANCH"):deptKey==="rob"?"ROBINSONS BRANCH":deptKey==="corp"?"CORP DEPT":a.team||"—"),
+        status:"Regular",target:tgt,actual_gp:estGP,actual_srp:Math.round(a.srp),
+        completion:Math.round((estGP/tgt)*100),dp:0,combined_gp:0,
+        department:deptNames[deptKey]||"MAIN INTERNATIONAL"
+      };
+    }).filter(a=>a.actual_srp>0);
+  };
+
+  const parseSalesTrackerForMonth=(text,deptKey,monthLabel,monthCode)=>{
+    const lines=text.trim().split("\n").filter(l=>l.trim());
+    if(lines.length<2)return[];
+
+    // Per-dept column structure (0-indexed)
+    // INTL: A=Date, B=Agent(1), C=SRP(2),  H=Teams(7),  J=Monthly(9)   format: 2026-07 (Jul)
+    // DOM:  A=Date, D=Agent(3), I=SRP(8),  S=Team(18),  T=Monthly(19)  format: 2025-03 (Mar)
+    // SM:   A=Date, E=Agent(4), F=SRP(5),  H=Team(7),   no monthly — use date col A
+    // ROB:  A=Date, E=Agent(4), F=SRP(5),  H=Team(7),   M=Monthly(12)
+    // CORP: A=Date, B=Agent(1), C=SRP(2),  no team,     J=Month(9)
+    const DEPT_COLS={
+      intl:{agent:1,srp:2,monthly:9, team:7, useDateFilter:false},
+      dom: {agent:3,srp:8,monthly:19,team:18,useDateFilter:false},
+      sm:  {agent:4,srp:5,monthly:-1,team:7, useDateFilter:true}, // no monthly col
+      rob: {agent:4,srp:5,monthly:12,team:7, useDateFilter:false},
+      corp:{agent:1,srp:2,monthly:9, team:-1,useDateFilter:false},
+    };
+
+    // Auto-detect from header row — but only override if found, keep fallback otherwise
+    let cols={...DEPT_COLS[deptKey]||DEPT_COLS.intl};
+    for(let h=0;h<Math.min(3,lines.length);h++){
+      const hdrs=parseCSVLine(lines[h]).map(x=>x.toUpperCase().trim());
+      const ac=hdrs.findIndex(x=>x==="AGENT"||x==="AGENTS"||x==="AGENT NAME");
+      const sc=hdrs.findIndex(x=>x==="SRP");
+      if(ac>=0&&sc>=0){
+        const mc=hdrs.findIndex(x=>x==="MONTHLY"||x==="MONTH");
+        const tc=hdrs.findIndex(x=>x==="TEAMS"||x==="TEAM");
+        if(ac>=0)cols.agent=ac;
+        if(sc>=0)cols.srp=sc;
+        if(mc>=0)cols.monthly=mc; // only override if found
+        if(tc>=0)cols.team=tc;
+        cols.useDateFilter=deptKey==="sm"; // SM always uses date filter
+        console.log("Tracker "+deptKey+" header: agent="+cols.agent+",srp="+cols.srp+",monthly="+cols.monthly+",team="+cols.team);
+        // Extra debug: show first 3 data rows monthly values
+        if(deptKey==="dom"||deptKey==="sm"||deptKey==="rob"){
+          for(let di=1;di<=Math.min(3,lines.length-1);di++){
+            const dr=parseCSVLine(lines[di]);
+            console.log("  "+deptKey+" row"+di+" monthly["+cols.monthly+"]="+dr[cols.monthly]+" agent["+cols.agent+"]="+dr[cols.agent]);
+          }
+        }
+        break;
+      }
+    }
+
+    // Build month matching criteria
+    const parts=monthLabel.split(" ");
+    const shortMon=parts[0]; const year=parts[1];
+    const monthNum=String(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(shortMon)+1).padStart(2,"0");
+
+    // For date-based filtering — match rows where Date column contains the target month/year
+    const datePatterns=[
+      year+"-"+monthNum,           // "2025-11" (ISO format)
+      monthNum+"/"+year,           // "11/2025"
+      shortMon+" "+year,           // "Nov 2025"
+      shortMon+". "+year,          // "Nov. 2025"
+      "/"+year,                    // catch year at minimum
+      year,                        // year only as last resort
+    ];
+    // For SM Explorer: date is "8/1/2025" format (M/D/YYYY)
+    // Match: contains "/"+year and month number at start
+    const smDateMatch=(dateVal)=>{
+      if(!dateVal.includes("/"+year))return false;
+      const parts=dateVal.split("/");
+      return parts.length>=2&&parseInt(parts[0])===parseInt(monthNum);
+    };
+
+    // For monthly-col filtering
+    const monthColPatterns=[
+      monthCode,                          // "2026-05"
+      monthCode+" ("+shortMon+")",        // "2026-05 (May)"  ← DOM/CORP format with space
+      monthCode+"("+shortMon+")",         // "2026-05(May)"   ← no space variant
+      year+"-"+monthNum+" ("+shortMon+")",// "2026-05 (May)"  alternate
+      shortMon+" "+year,                  // "May 2026"
+    ];
+
+    let sampleVal="";
+    const agentMap={};
+    for(let i=1;i<lines.length;i++){
+      const v=parseCSVLine(lines[i]);
+      const getV=j=>(v[j]||"").trim();
+
+      // Month filter
+      if(cols.useDateFilter){
+        // Filter by date column (Col A = index 0)
+        const dateVal=getV(0);
+        if(!dateVal){continue;}
+        if(!sampleVal)sampleVal=dateVal;
+        const dateMatch=(deptKey==="sm"?smDateMatch(dateVal):false)||
+          datePatterns.some(p=>dateVal.startsWith(p))||dateVal.startsWith(year+"-"+monthNum);
+        if(!dateMatch)continue;
+      } else {
+        // Filter by monthly column
+        const monthVal=cols.monthly>=0?getV(cols.monthly):"";
+        if(!monthVal)continue;
+        if(!sampleVal)sampleVal=monthVal;
+        const mvU=monthVal.toUpperCase().trim();
+        // Exact match — prevent "2026-06" from matching "2025-06" via partial includes
+        const monthMatch=monthColPatterns.some(p=>{
+          const pu=p.toUpperCase();
+          return mvU===pu||mvU.startsWith(pu+" ")||mvU.startsWith(pu+"(")||mvU.startsWith(pu+" (")||mvU.startsWith(pu+"-");
+        });
+        if(!monthMatch)continue;
+      }
+
+      const name=getV(cols.agent);
+      if(!name||name.length>80)continue;
+      const nu=name.toUpperCase();
+      if(nu==="AGENT"||nu==="AGENTS"||nu==="DATE")continue;
+      const srp=toN(getV(cols.srp));
+      if(srp<=0)continue;
+      const team=cols.team>=0?getV(cols.team):"";
+      if(!agentMap[name])agentMap[name]={name,srp:0,team};
+      agentMap[name].srp+=srp;
+      if(team&&!agentMap[name].team)agentMap[name].team=team;
+    }
+
+    const count=Object.keys(agentMap).length;
+    console.log("parseSalesTrackerForMonth "+deptKey+" "+monthLabel+": agents="+count+", sample="+sampleVal);
+    const deptNames={intl:"MAIN INTERNATIONAL",dom:"MAIN DOMESTIC",sm:"SM MANILA",rob:"ROBINSONS",corp:"CORP"};
+    return Object.values(agentMap).map(a=>{
+      const estGP=Math.round(a.srp*0.2);
+      const tgt=deptKey==="corp"?231000:210000;
+      const nu2=a.name.toUpperCase();
+      const teamName=
+        deptKey==="intl"?(INTL_TEAM_MAP[nu2]||a.team||"—"):
+        deptKey==="dom"?(a.team||DOM_TEAM_MAP[nu2]||"—"):
+        deptKey==="sm"?(smTeamMap[nu2]||smTeamMap[a.name.split(" ")[0].toUpperCase()]||a.team||"SM MANILA BRANCH"):
+        deptKey==="rob"?(ROB_TEAM_MAP[nu2]||"ROBINSONS BRANCH"):
+        deptKey==="corp"?"CORP DEPT":a.team||"—";
+      return{name:a.name,team:teamName,status:"Regular",target:tgt,actual_gp:estGP,actual_srp:Math.round(a.srp),completion:Math.round((estGP/tgt)*100),dp:0,combined_gp:0,department:deptNames[deptKey]||"MAIN INTERNATIONAL"};
+    }).filter(a=>a.actual_srp>0).sort((a,b)=>b.actual_srp-a.actual_srp);
+  };
+  // Each dept has its own dedicated Google Sheets tab
+  const DEPT_GIDS={
+    intl:"49701909",    // INTL SALES TRACKER
+    dom:"303720486",    // DOM SALES TRACKER
+    sm:"1219207482",    // SM EXPLORER
+    rob:"1930931831",   // ROBINSONS
+    corp:"1586893116",  // CORP
+  };
+  const PROGRESS_GID="140575773"; // AGENT PROGRESS (UPDATED)
+  const SM_SETTINGS_GID="1168675373"; // SETTINGS tab — has SM agent-team mapping
+
+  // Fetch SM team assignments from SETTINGS tab
+  const [smTeamMap,setSmTeamMap]=useState({});
+  const fetchSmTeams=async()=>{
+    try{
+      // Read from SM EXPLORER directly — agent col E(4), team col H(7)
+      const text=await fetchCSV(DEPT_GIDS.sm);
+      const lines=text.trim().split("\n").filter(l=>l.trim());
+      if(lines.length<2)return;
+      // Find agent and team cols from header
+      const headers=parseCSVLine(lines[0]).map(h=>h.toUpperCase().trim());
+      const agentCol=headers.findIndex(h=>h==="AGENT"||h==="AGENTS")||4;
+      const teamCol=headers.findIndex(h=>h==="TEAM"||h==="TEAMS")||7;
+      const map={};
+      for(let i=1;i<lines.length;i++){
+        const v=parseCSVLine(lines[i]);
+        const name=(v[agentCol]||"").trim().toUpperCase();
+        const team=(v[teamCol]||"").trim();
+        if(name&&team&&!map[name])map[name]=team; // first occurrence wins
+      }
+      // Only keep valid SM Manila team assignments
+      const filtered={};
+      Object.entries(map).forEach(([k,v])=>{
+        if(v==="TEAM A"||v==="TEAM B"||v.startsWith("TEAM "))filtered[k]=v;
+      });
+      console.log("SM teams (filtered):",JSON.stringify(filtered));
+      setSmTeamMap(filtered);
+    }catch(e){console.error("fetchSmTeams error:",e);}
+  };
+
+  const parseSalesTracker=(text,deptKey)=>{
+    const lines=text.trim().split("\n").filter(l=>l.trim());
+    if(lines.length<2)return[];
+    const headers=parseCSVLine(lines[0]).map(h=>h.toUpperCase().trim());
+
+    // Per-dept fallback column indexes (0-indexed, A=0, B=1, C=2...)
+    // INTL: B=Agent(1), C=SRP(2), J=Monthly(9),  H=Teams(7)
+    // DOM:  D=Agent(3), I=SRP(8), T=Monthly(19), no team col
+    // SM:   E=Agent(4), F=SRP(5), M=Monthly(12), H=Team(7)
+    // ROB:  E=Agent(4), F=SRP(5), M=Monthly(12), H=Team(7)
+    // CORP: B=Agent(1), C=SRP(2), J=Month(9),    no team col
+    const FALLBACK={
+      intl:{agent:1,srp:2,monthly:9, team:7},
+      dom: {agent:3,srp:8,monthly:19,team:18},
+      sm:  {agent:4,srp:5,monthly:-1,team:7},  // SM has no monthly col — use date
+      rob: {agent:4,srp:5,monthly:12,team:7},
+      corp:{agent:1,srp:2,monthly:9, team:-1},
+    };
+    const fb=FALLBACK[deptKey]||FALLBACK.intl;
+
+    // Auto-detect from headers
+    let agentCol=headers.findIndex(h=>h==="AGENT"||h==="AGENTS"||h==="AGENT NAME");
+    let srpCol=headers.findIndex(h=>h==="SRP");
+    let monthlyCol=headers.findIndex(h=>h==="MONTHLY"||h==="MONTH");
+    let teamCol=headers.findIndex(h=>h==="TEAMS"||h==="TEAM");
+
+    if(agentCol<0)agentCol=fb.agent;
+    if(srpCol<0)srpCol=fb.srp;
+    if(monthlyCol<0)monthlyCol=fb.monthly;
+    if(teamCol<0)teamCol=fb.team;
+
+    // SM Explorer has no reliable MONTHLY col — always use date-based filter
+    const useDateFilter=deptKey==="sm"||(monthlyCol<0);
+
+    // Debug: log first data row to verify correct columns
+    if(lines.length>1){
+      const s=parseCSVLine(lines[1]);
+      console.log("parseSalesTracker "+deptKey+" debug: agent["+agentCol+"]="+s[agentCol]+", srp["+srpCol+"]="+s[srpCol]+", monthly["+monthlyCol+"]="+s[monthlyCol]);
+    }
+
+    const now=new Date();
+    const curYear=now.getFullYear();
+    const curMonthNum=String(now.getMonth()+1).padStart(2,"0");
+    const curMonthCode=curYear+"-"+curMonthNum;
+    const curShort=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][now.getMonth()];
+
+    let inc=0,skip=0;
+    const agentMap={};
+    for(let i=1;i<lines.length;i++){
+      const v=parseCSVLine(lines[i]);
+      const getV=j=>(v[j]||"").trim();
+
+      if(useDateFilter){
+        const dateVal=getV(0);
+        if(!dateVal){skip++;continue;}
+        // SM dates: "8/1/2025" format; others: "2025-08-01"
+        const isCurrentMonth=deptKey==="sm"?
+          (dateVal.includes("/"+curYear)&&dateVal.split("/")[0]===String(parseInt(curMonthNum))):
+          (dateVal.startsWith(curMonthCode));
+        if(!isCurrentMonth){skip++;continue;}
+      } else {
+        const monthVal=getV(monthlyCol);
+        if(!monthVal){skip++;continue;}
+        const mvU=monthVal.toUpperCase().trim();
+        // Strict match — prevent partial matches like "Jul" matching "2025-07 (Jul)"
+        const isCurrentMonth=mvU===curMonthCode||mvU.startsWith(curMonthCode+" ")||mvU.startsWith(curMonthCode+"(")||mvU.startsWith(curMonthCode+" (");
+        if(!isCurrentMonth){skip++;continue;}
+      }
+
+      const name=getV(agentCol);
+      if(!name||name.length>80)continue;
+      const nu=name.toUpperCase();
+      if(nu==="AGENT"||nu==="AGENTS"||nu==="DATE")continue;
+      const srp=toN(getV(srpCol));
+      if(srp<=0)continue;
+      const team=teamCol>=0?getV(teamCol):"";
+      if(!agentMap[name])agentMap[name]={name,srp:0,team};
+      agentMap[name].srp+=srp;
+      inc++;
+      if(team&&!agentMap[name].team)agentMap[name].team=team;
+    }
+    console.log("parseSalesTracker "+deptKey+": inc="+inc+", skip="+skip+", agents="+Object.keys(agentMap).length);
+    const deptNames={intl:"MAIN INTERNATIONAL",dom:"MAIN DOMESTIC",sm:"SM MANILA",rob:"ROBINSONS",corp:"CORP"};
+    return Object.values(agentMap).map(a=>{
+      const estGP=Math.round(a.srp*0.2);
+      const tgt=deptKey==="corp"?231000:210000;
+      const nu2=a.name.toUpperCase();
+      const teamName=
+        deptKey==="intl"?(INTL_TEAM_MAP[nu2]||a.team||"—"):
+        deptKey==="dom"?(a.team||DOM_TEAM_MAP[nu2]||"—"):
+        deptKey==="sm"?(smTeamMap[nu2]||smTeamMap[a.name.split(" ")[0].toUpperCase()]||a.team||"SM MANILA BRANCH"):
+        deptKey==="rob"?(ROB_TEAM_MAP[nu2]||"ROBINSONS BRANCH"):
+        deptKey==="corp"?"CORP DEPT":a.team||"—";
+      return{name:a.name,team:teamName,status:"Regular",target:tgt,actual_gp:estGP,actual_srp:Math.round(a.srp),completion:Math.round((estGP/tgt)*100),dp:0,combined_gp:0,department:deptNames[deptKey]};
+    }).filter(a=>a.actual_srp>0).sort((a,b)=>b.actual_srp-a.actual_srp);
+  };
+
+  // ─── FETCH PER DEPT (each uses its own GID) ───────────────────────────────
+  const fetchOneDept=async(deptKey)=>{
+    try{
+      const gid=DEPT_GIDS[deptKey];
+      if(!gid)return;
+      const text=await fetchCSV(gid);
+      const data=parseSalesTracker(text,deptKey);
+      if(data.length>0){
+        setAgents(prev=>({...prev,[deptKey]:data}));
+        console.log("✅ "+deptKey+" loaded: "+data.length+" agents");
+      }
+    }catch(e){console.error("fetchOneDept "+deptKey+" error:",e);}
+  };
+
+  // Fetch current active dept tab only
+  const fetchCurrentDept=()=>{
+    const deptKey=activeTab==="intl"?"intl":activeTab==="dom"?"dom":activeTab==="sm"?"sm":activeTab==="rob"?"rob":activeTab==="corp"?"corp":null;
+    if(deptKey)fetchOneDept(deptKey);
+  };
+
+  // Fetch all depts at once (background sync)
+  const fetchAllDepts=async()=>{
+    setSyncStatus("syncing");
+    try{
+      await Promise.allSettled(Object.keys(DEPT_GIDS).map(k=>fetchOneDept(k)));
+      setLastSync(new Date());setSyncStatus("live");setCountdown(60);
+    }catch(e){setSyncStatus("offline");}
+  };
+
+  // ─── FETCH AGENT PROGRESS (separate GID, separate state) ──────────────────
+  const progressLoaded=React.useRef(false);
+  const fetchProgressData=async(mon)=>{
+    const now2=new Date();const mn2=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][now2.getMonth()]+" "+now2.getFullYear();
+    const month=(mon&&mon!=="undefined"&&mon!==null)?mon:mn2;
+    try{
+      if(month===CURRENT_MONTH){
+        // Current month — use AGENT PROGRESS (UPDATED) sheet
+        const text=await fetchCSV(PROGRESS_GID);
+        const parsed=parseAgentProgressSheet(text);
+        if(parsed){
+          const seen=new Set();
+          const all=Object.values(parsed).flat().filter(a=>{
+            if(seen.has(a.name.toUpperCase()))return false;
+            seen.add(a.name.toUpperCase());return true;
+          });
+          setProgressAgents(all);
+          console.log("Agent Progress (current) loaded: "+all.length+" agents");
+        }
+      } else {
+        // Historical month — fetch from each dept tracker and combine
+        const monthCode=MONTH_CODE_MAP[month]||"2026-06";
+        const allAgents=[];
+        const results=await Promise.allSettled(
+          Object.entries(DEPT_GIDS).map(async([dept,gid])=>{
+            const text=await fetchCSV(gid);
+            return parseSalesTrackerForMonth(text,dept,month,monthCode);
+          })
+        );
+        results.forEach(r=>{if(r.status==="fulfilled")allAgents.push(...r.value);});
+        const seen=new Set();
+        const deduped=allAgents.filter(a=>{
+          if(seen.has(a.name.toUpperCase()))return false;
+          seen.add(a.name.toUpperCase());return true;
+        });
+        setProgressAgents(deduped);
+        console.log("Agent Progress ("+month+") loaded: "+deduped.length+" agents");
+      }
+    }catch(e){console.error("fetchProgressData error:",e);}
+  };
+
+  // ─── GONG SOUND via Web Audio API ────────────────────────────────────────────
+  const playGong=()=>{
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      const playTone=(freq,start,dur,vol=0.5)=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.setValueAtTime(freq,ctx.currentTime+start);
+        o.type="sine";
+        g.gain.setValueAtTime(0,ctx.currentTime+start);
+        g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+        o.start(ctx.currentTime+start);
+        o.stop(ctx.currentTime+start+dur);
+      };
+      // Gong: deep resonant strike + harmonics
+      playTone(80,0,3.0,0.6);   // fundamental
+      playTone(160,0,2.5,0.4);  // 2nd harmonic
+      playTone(253,0,2.0,0.3);  // 3rd harmonic
+      playTone(400,0,1.5,0.2);  // overtone
+      playTone(80,0.05,3.0,0.3);// slight delay for resonance
+    }catch(e){console.log("Audio not available");}
+  };
+
+  const playChime=()=>{
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      const playTone=(freq,start,dur,vol=0.4)=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.setValueAtTime(freq,ctx.currentTime+start);
+        o.type="sine";
+        g.gain.setValueAtTime(0,ctx.currentTime+start);
+        g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+        o.start(ctx.currentTime+start);
+        o.stop(ctx.currentTime+start+dur);
+      };
+      // Chime: ascending notes
+      [523,659,784,1047].forEach((f,i)=>playTone(f,i*0.15,0.8,0.4));
+    }catch(e){}
+  };
+
+  // ─── COMPUTE SALES ALERTS from tracker data ───────────────────────────────
+  const computeSalesAlerts=async()=>{
+    const today=new Date();
+    const todayStr=today.toISOString().split("T")[0]; // "2026-07-04"
+    const todayM=String(today.getMonth()+1); // "7"
+    const todayD=String(today.getDate()); // "4"
+    const todayY=String(today.getFullYear()); // "2026"
+
+    const agentDaySales={}; // {agentName: {date: count}}
+    const agentTodaySales={}; // {agentName: count today}
+
+    // Fetch all trackers and parse daily sales
+    const allTrackers=await Promise.allSettled(
+      Object.entries(DEPT_GIDS).map(async([dept,gid])=>{
+        const text=await fetchCSV(gid);
+        const lines=text.trim().split("\n").filter(l=>l.trim());
+        if(lines.length<2)return{dept,rows:[]};
+        const headers=parseCSVLine(lines[0]).map(h=>h.toUpperCase().trim());
+        const fb={intl:{agent:1,date:0},dom:{agent:3,date:0},sm:{agent:4,date:0},rob:{agent:4,date:0},corp:{agent:1,date:0}};
+        const agentCol=headers.findIndex(h=>h==="AGENT"||h==="AGENTS")||fb[dept].agent;
+        const dateCol=0; // always col A
+        const rows=[];
+        for(let i=1;i<lines.length;i++){
+          const v=parseCSVLine(lines[i]);
+          const name=(v[agentCol]||"").trim();
+          const dateVal=(v[dateCol]||"").trim();
+          if(!name||!dateVal)continue;
+          rows.push({name,date:dateVal,dept});
+        }
+        return{dept,rows};
+      })
+    );
+
+    allTrackers.forEach(r=>{
+      if(r.status!=="fulfilled")return;
+      r.value.rows.forEach(({name,date,dept})=>{
+        const nu=name.toUpperCase();
+        // Parse date — "2026-07-04" or "7/4/2026" formats
+        let dateKey="";
+        if(date.includes("-")&&date.length>=10)dateKey=date.substring(0,10);
+        else if(date.includes("/")){
+          const p=date.split("/");
+          if(p.length>=3)dateKey=p[2]+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0");
+        }
+        if(!dateKey)return;
+        if(!agentDaySales[nu])agentDaySales[nu]={name,dept,days:{}};
+        agentDaySales[nu].days[dateKey]=(agentDaySales[nu].days[dateKey]||0)+1;
+        // Count today's sales
+        if(dateKey===todayStr||(date.includes("/")&&date.split("/")[0]===todayM&&date.split("/")[1]===todayD&&date.split("/")[2]===todayY)){
+          agentTodaySales[nu]=(agentTodaySales[nu]||0)+1;
+        }
+      });
+    });
+
+    // Compute streaks
+    const getStreak=(days)=>{
+      const sorted=Object.keys(days).sort().reverse();
+      let streak=0;
+      let prev=null;
+      for(const d of sorted){
+        if(!prev){prev=new Date(d);streak=1;continue;}
+        const curr=new Date(d);
+        const diff=(prev-curr)/(1000*60*60*24);
+        if(diff===1){streak++;prev=curr;}
+        else break;
+      }
+      return streak;
+    };
+
+    const alerts=[];
+    Object.entries(agentDaySales).forEach(([nu,data])=>{
+      const streak=getStreak(data.days);
+      const todayCount=agentTodaySales[nu]||0;
+      const photo=AGENT_PHOTOS[data.name.toUpperCase()]||AGENT_PHOTOS[data.name]||null;
+      if(streak>=4)alerts.push({type:"streak",name:data.name,value:streak,dept:data.dept,photo,label:streak+" Day Streak! 🔥"});
+      if(todayCount>=4)alerts.push({type:"blitz",name:data.name,value:todayCount,dept:data.dept,photo,label:todayCount+" Sales Today! ⚡"});
+    });
+
+    return alerts.sort((a,b)=>b.value-a.value);
+  };
+
+  // ─── SUPABASE FUNCTIONS ───────────────────────────────────────────────────────
+  const loadPhotosFromSupabase=async()=>{
+    if(!sb)return;
+    try{
+      const{data,error}=await sb.from("agent_photos").select("agent_name,photo_base64,photo_url");
+      if(error||!data)return;
+      // Clear and reload from Supabase (source of truth)
+      data.forEach(row=>{
+        const key=row.agent_name.toUpperCase();
+        if(row.photo_base64)AGENT_PHOTOS[key]=row.photo_base64;
+        else if(row.photo_url)AGENT_PHOTOS[key]=row.photo_url;
+      });
+      // Also cache to localStorage
+      try{localStorage.setItem('gladex_agent_photos',JSON.stringify(AGENT_PHOTOS));}catch(e){}
+      console.log("✅ Photos loaded from Supabase:",data.length,"agents");
+    }catch(e){
+      console.warn("Supabase photo load failed, using localStorage cache");
+      try{const s=localStorage.getItem('gladex_agent_photos');if(s)Object.assign(AGENT_PHOTOS,JSON.parse(s));}catch(e2){}
+    }
+  };
+
+  const syncSalesToSupabase=async()=>{
+    if(!sb){alert("Add your Supabase anon key first!");return;}
+    const btn=document.getElementById("syncBtn");
+    if(btn){btn.textContent="⏳ Syncing...";btn.disabled=true;}
+    try{
+      const now=new Date();
+      const curMonthNum=String(now.getMonth()+1).padStart(2,"0");
+      const curYear=String(now.getFullYear());
+      const curMonthCode=curYear+"-"+curMonthNum;
+      const curShort=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][now.getMonth()];
+      const monthlyCode=curMonthCode+" ("+curShort+")";
+      let totalSynced=0;
+      const deptNames={intl:"MAIN INTERNATIONAL",dom:"MAIN DOMESTIC",sm:"SM MANILA",rob:"ROBINSONS",corp:"CORP"};
+      const fbCols={
+        intl:{agent:1,srp:2,date:0,team:7,monthly:9},
+        dom:{agent:3,srp:8,date:0,team:18,monthly:19},
+        sm:{agent:4,srp:5,date:0,team:7,monthly:-1},
+        rob:{agent:4,srp:5,date:0,team:7,monthly:12},
+        corp:{agent:1,srp:2,date:0,team:-1,monthly:9},
+      };
+      await Promise.allSettled(Object.entries(DEPT_GIDS).map(async([dept,gid])=>{
+        const text=await fetchCSV(gid);
+        const lines=text.trim().split("\n").filter(l=>l.trim());
+        if(lines.length<2)return;
+        const headers=parseCSVLine(lines[0]).map(h=>h.toUpperCase().trim());
+        const c=fbCols[dept];
+        const agentCol=headers.findIndex(h=>h==="AGENT"||h==="AGENTS");
+        const srpCol=headers.findIndex(h=>h==="SRP");
+        const mc=headers.findIndex(h=>h==="MONTHLY"||h==="MONTH");
+        const ac=agentCol>=0?agentCol:c.agent;
+        const sc=srpCol>=0?srpCol:c.srp;
+        const mcc=mc>=0?mc:c.monthly;
+        const rows=[];
+        for(let i=1;i<lines.length;i++){
+          const v=parseCSVLine(lines[i]);
+          const g=j=>(v[j]||"").trim();
+          if(mcc>=0){const mv=g(mcc);if(!mv.startsWith(curMonthCode))continue;}
+          else if(dept==="sm"){
+            const p=g(0).split("/");
+            if(!(p.length>=3&&p[0]===String(parseInt(curMonthNum))&&p[2]===curYear))continue;
+          }
+          const name=g(ac);const srp=toN(g(sc));
+          if(!name||srp<=0)continue;
+          const dv=g(0);let saleDate=new Date().toISOString().split("T")[0];
+          if(dv.includes("-")&&dv.length>=10)saleDate=dv.substring(0,10);
+          else if(dv.includes("/")){const p=dv.split("/");if(p.length>=3)saleDate=p[2]+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0");}
+          rows.push({agent_name:name,department:deptNames[dept],sale_date:saleDate,srp,team:c.team>=0?g(c.team)||null:null,monthly_code:monthlyCode,synced_at:new Date().toISOString()});
+        }
+        if(rows.length>0){
+          const{error}=await sb.from("sales").upsert(rows,{onConflict:"agent_name,department,sale_date,srp,destination",ignoreDuplicates:true});
+          if(!error){totalSynced+=rows.length;console.log("✅ "+dept+": "+rows.length+" rows");}
+          else console.error("Sync "+dept+" error:",error.message);
+        }
+      }));
+      alert("✅ Synced "+totalSynced+" sales records to Supabase!");
+    }catch(e){console.error("Sync error:",e);alert("❌ Sync failed: "+e.message);}
+    finally{if(btn){btn.textContent="☁️ Sync to Supabase";btn.disabled=false;}}
+  };
+
+  const logAchievement=async(agentName,dept,type,value)=>{
+    if(!sb)return;
+    await sb.from("achievements").upsert({agent_name:agentName,department:dept,achievement_type:type,achievement_value:value,achievement_date:new Date().toISOString().split("T")[0]},{onConflict:"agent_name,achievement_type,achievement_date"});
+  };
+
+  useEffect(()=>{
+    fetchAllDepts();
+    fetchSmTeams();
+    // Load photos from Supabase on mount
+    if(sb)loadPhotosFromSupabase();
+  },[]);
+
+  // Auto-sync: every 60s, only refresh current active dept (not progress)
+  useEffect(()=>{
+    const s=setInterval(()=>{
+      if(activeTab!=="progress"&&activeTab!=="dest"&&activeTab!=="team"){
+        fetchCurrentDept();
+        setSyncStatus("live");setLastSync(new Date());setCountdown(60);
+      } else {
+        setCountdown(60);
+      }
+    },60000);
+    const c=setInterval(()=>setCountdown(x=>x>0?x-1:60),1000);
+    return()=>{clearInterval(s);clearInterval(c);};
+  },[activeTab,selectedMonth]);
+
+  // Load Agent Progress only when tab is first opened
+  useEffect(()=>{
+    if(activeTab==="progress"&&!progressLoaded.current){
+      progressLoaded.current=true;
+      const n=new Date();const cm=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][n.getMonth()]+" "+n.getFullYear();fetchProgressData(cm);
+    }
+  },[activeTab]);
+
+  const handleMonthChange=(mon)=>{
+    setSelectedMonth(mon);
+    if(mon!==CURRENT_MONTH){
+      setAgents({intl:[],dom:[],sm:[],rob:[],corp:[]});
+      const monthCode=MONTH_CODE_MAP[mon]||"2026-06";
+      Object.entries(DEPT_GIDS).forEach(async([dept,gid])=>{
+        try{
+          const text=await fetchCSV(gid);
+          const data=parseSalesTrackerForMonth(text,dept,mon,monthCode);
+          if(data.length>0)setAgents(prev=>({...prev,[dept]:data}));
+          else console.warn("No data for "+dept+" in "+mon);
+        }catch(e){console.error("handleMonthChange "+dept,e);}
+      });
+    } else {
+      fetchAllDepts();
+    }
+  };
+
+  const mult=period==="weekly"?0.25:period==="yearly"?12:1;
+  const tgtMult=(base)=>Math.round(base*mult);
+  const scaleAgents=list=>list.map(a=>({...a,actual_gp:Math.round(a.actual_gp*mult),actual_srp:Math.round(a.actual_srp*mult),target:Math.round(a.target*mult)}));
+
+  const currentAgents=activeTab==="intl"?agents.intl:activeTab==="dom"?agents.dom:activeTab==="sm"?agents.sm:activeTab==="rob"?agents.rob:agents.corp;
+  const allTeams=["All",...new Set(currentAgents.map(a=>a.team).filter(Boolean))];
+  const filtered=scaleAgents(currentAgents).filter(a=>{
+    const q=search.toLowerCase();
+    const matchSearch=!q||a.name.toLowerCase().includes(q)||(a.team||"").toLowerCase().includes(q)||(a.status||"").toLowerCase().includes(q);
+    const matchTeam=teamFilter==="All"||a.team===teamFilter;
+    return matchSearch&&matchTeam;
+  });
+
+  const allA=[...agents.intl,...agents.dom,...agents.sm,...agents.rob,...agents.corp];
+  const totalSRP=allA.reduce((s,a)=>s+a.actual_srp,0);
+  const totalGP=allA.reduce((s,a)=>s+a.actual_gp,0);
+  const totalTgt=62055000;
+  const fSRP=filtered.reduce((s,a)=>s+a.actual_srp,0);
+  const fGP=filtered.reduce((s,a)=>s+a.actual_gp,0);
+  const deptTgts={intl:DEPT_TARGETS.intl,dom:DEPT_TARGETS.dom,sm:DEPT_TARGETS.sm,rob:DEPT_TARGETS.rob,corp:DEPT_TARGETS.corp};
+  const curTgt=tgtMult(deptTgts[activeTab]||23100000);
+
+  const filteredDest=destFilter==="All"?DESTINATIONS:DESTINATIONS.filter(d=>d.category===destFilter);
+  const topDest=[...DESTINATIONS].sort((a,b)=>b.srp-a.srp).slice(0,5);
+  const teamChart=TEAM_PERF.map(t=>({name:t.team.replace("Main ",""),SRP:+(t.total_srp/1e6).toFixed(1),Target:+(t.target/1e6).toFixed(1),GP:+(t.gp/1e6).toFixed(1)}));
+  const pLabel=period==="weekly"?"Weekly":period==="yearly"?"Yearly":"MTD";
+  const syncBadge=syncStatus==="live"?{bg:"rgba(16,185,129,.2)",border:"rgba(16,185,129,.4)",color:"#6ee7b7",txt:("🟢 Live · next sync "+countdown+"s")}:syncStatus==="syncing"?{bg:"rgba(245,158,11,.2)",border:"rgba(245,158,11,.4)",color:"#fcd34d",txt:"🔄 Syncing..."}:syncStatus==="offline"?{bg:"rgba(239,68,68,.2)",border:"rgba(239,68,68,.4)",color:"#fca5a5",txt:"🔴 Offline · cached data"}:{bg:"rgba(99,102,241,.2)",border:"rgba(99,102,241,.4)",color:"#a5b4fc",txt:"⏳ Loading..."};
+
+  return(
+    <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",background:"#f3f4f6",minHeight:"100vh"}}>
+
+      {/* HEADER */}
+      <div style={{background:"linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)",color:"white",padding:"18px 24px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+          <div>
+            <div style={{fontSize:11,opacity:.6,textTransform:"uppercase",letterSpacing:".1em",marginBottom:4}}>✈ Gladex Travel & Tours</div>
+            <div style={{fontSize:20,fontWeight:700}}>INTL/DOM Daily Sales Dashboard</div>
+            <div style={{fontSize:12,opacity:.7,marginTop:3}}>
+              {selectedMonth===CURRENT_MONTH?"Month-to-Date Performance Report":("Historical Report — "+selectedMonth)}
+              {lastSync&&<span style={{marginLeft:10,fontSize:11,opacity:.6}}>· Last sync: {lastSync.toLocaleTimeString()}</span>}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+            <div style={{background:syncBadge.bg,border:("1px solid "+syncBadge.border),borderRadius:8,padding:"7px 14px",textAlign:"center"}}>
+              <div style={{fontSize:13,fontWeight:700,color:syncBadge.color}}>{syncBadge.txt}</div>
+              <div style={{fontSize:10,opacity:.7}}>Google Sheets Sync</div>
+            </div>
+            <a href="/achievements.html" target="_blank" style={{padding:"7px 14px",background:"linear-gradient(135deg,#f59e0b,#ef4444)",border:"none",borderRadius:8,color:"white",fontSize:13,cursor:"pointer",fontWeight:700,boxShadow:"0 2px 8px rgba(245,158,11,.4)",display:"flex",alignItems:"center",gap:6,textDecoration:"none"}}>
+              🏆 Sales Alerts
+            </a>
+            <a href="/photo-manager.html" target="_blank" style={{padding:"7px 12px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,color:"white",fontSize:12,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>
+              📷
+            </a>
+            <button id="syncBtn" onClick={syncSalesToSupabase} style={{padding:"7px 14px",background:"rgba(99,102,241,.3)",border:"1px solid rgba(99,102,241,.5)",borderRadius:8,color:"white",fontSize:13,cursor:"pointer",fontWeight:600}}>☁️ Sync to Supabase</button>
+            <button onClick={()=>{if(activeTab==="progress"){progressLoaded.current=true;fetchProgressData();}else if(activeTab==="dest"||activeTab==="team"){fetchAllDepts();}else{fetchCurrentDept();setSyncStatus("syncing");fetchAllDepts();}}} style={{padding:"7px 14px",background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.3)",borderRadius:8,color:"white",fontSize:13,cursor:"pointer",fontWeight:600}}>🔄 Refresh</button>
+            <div style={{background:"rgba(16,185,129,.2)",borderRadius:8,padding:"7px 14px",textAlign:"center",border:"1px solid rgba(16,185,129,.4)"}}>
+              <div style={{fontSize:18,fontWeight:700,color:"#6ee7b7"}}>{fmt(totalSRP)}</div>
+              <div style={{fontSize:10,opacity:.7}}>Total MTD SRP</div>
+            </div>
+            <div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"7px 14px",textAlign:"center"}}>
+              <div style={{fontSize:18,fontWeight:700}}>{Math.round(totalSRP/totalTgt*100)}%</div>
+              <div style={{fontSize:10,opacity:.7}}>Overall Completion</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{padding:"16px 24px 0"}}>
+        {/* STAT CARDS */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:14}}>
+          <StatCard label="Total MTD SRP" value={fmt(totalSRP)} sub={("Target: "+fmt(totalTgt))} color="#4f46e5"/>
+          <StatCard label="Total GP Est." value={fmt(totalGP)} sub="At 20% margin" color="#10b981"/>
+          <StatCard label="Total Agents" value={allA.length} sub="All departments" color="#0ea5e9"/>
+          <StatCard label="SRP Gap" value={fmt(totalTgt-totalSRP)} sub="Remaining to hit target" color="#ef4444"/>
+          <StatCard label="Overall Completion" value={Math.round(totalSRP/totalTgt*100)+"%"} sub="vs Grand Target" color="#f59e0b"/>
+        </div>
+
+        {/* SEARCH & FILTER BAR */}
+        <div style={{background:"white",borderRadius:10,padding:"12px 16px",marginBottom:12,boxShadow:"0 1px 4px rgba(0,0,0,.06)",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+
+          {/* Month Selector */}
+          <div style={{display:"flex",alignItems:"center",gap:8,background:"#f0f4ff",borderRadius:8,padding:"6px 12px",border:"1px solid #c7d2fe"}}>
+            <span style={{fontSize:14}}>📅</span>
+            <div>
+              <div style={{fontSize:10,color:"#6b7280",fontWeight:600,textTransform:"uppercase",letterSpacing:".05em",marginBottom:2}}>Month</div>
+              <select value={selectedMonth} onChange={e=>handleMonthChange(e.target.value)}
+                style={{border:"none",background:"transparent",fontSize:13,fontWeight:700,color:"#4f46e5",cursor:"pointer",padding:0,outline:"none"}}>
+                {(()=>{
+                  const months=[];
+                  const now=new Date();
+                  const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                  // Generate last 18 months dynamically starting from current month
+                  for(let i=0;i<18;i++){
+                    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+                    const label=monthNames[d.getMonth()]+" "+d.getFullYear();
+                    months.push(label);
+                  }
+                  return months.map(m=>(
+                    <option key={m} value={m}>{m===months[0]?(m+" (Current)"):m}</option>
+                  ));
+                })()}
+              </select>
+            </div>
+            {monthLoading&&<span style={{fontSize:12,color:"#4f46e5",animation:"spin 1s linear infinite"}}>⏳</span>}
+          </div>
+
+          {/* Divider */}
+          <div style={{width:1,height:32,background:"#e5e7eb"}}/>
+
+          {/* Agent Search */}
+          <div style={{position:"relative",flex:"1 1 220px"}}>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:15,opacity:.4}}>🔍</span>
+            <input type="text" placeholder="Search agent, team, status..." value={search} onChange={e=>{setSearch(e.target.value);setTeamFilter("All");}}
+              style={{width:"100%",padding:"8px 32px 8px 34px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:13,color:"#111827"}}/>
+            {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.5}}>✕</button>}
+          </div>
+
+          {/* Period Toggle */}
+          <div style={{display:"flex",background:"#f3f4f6",borderRadius:8,padding:3,gap:3}}>
+            {[{k:"weekly",l:"📅 Weekly"},{k:"monthly",l:"📆 Monthly"},{k:"yearly",l:"📊 Yearly"}].map(p=>(
+              <button key={p.k} onClick={()=>setPeriod(p.k)} style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:period===p.k?"#4f46e5":"transparent",color:period===p.k?"white":"#6b7280"}}>
+                {p.l}
+              </button>
+            ))}
+          </div>
+
+          {/* Team Filter */}
+          <select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}
+            style={{padding:"8px 12px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:13,color:"#374151",background:"white",cursor:"pointer"}}>
+            {allTeams.map(t=><option key={t} value={t}>{t==="All"?"👥 All Teams":t}</option>)}
+          </select>
+
+          {/* Labels */}
+          <div style={{fontSize:11,color:"#9ca3af"}}>
+            {period==="weekly"&&"÷4 weekly est."}
+            {period==="monthly"&&(selectedMonth+" data")}
+            {period==="yearly"&&"×12 yearly proj."}
+          </div>
+          {search&&<div style={{fontSize:12,background:"#f0f4ff",color:"#4f46e5",padding:"4px 10px",borderRadius:99}}>{filtered.length} results</div>}
+          {selectedMonth!==CURRENT_MONTH&&(
+            <div style={{fontSize:11,background:"#fef3c7",color:"#92400e",padding:"4px 10px",borderRadius:99,fontWeight:600}}>
+              📅 Viewing: {selectedMonth}
+            </div>
+          )}
+        </div>
+
+        {/* TABS */}
+        <div style={{background:"white",borderRadius:"10px 10px 0 0",boxShadow:"0 1px 4px rgba(0,0,0,.06)"}}>
+          <div style={{display:"flex",overflowX:"auto",borderBottom:"1px solid #e5e7eb",padding:"0 8px"}}>
+            <Tab label="🌏 International" active={activeTab==="intl"} onClick={()=>{setActiveTab("intl");setTeamFilter("All");}}/>
+            <Tab label="🏠 Domestic" active={activeTab==="dom"} onClick={()=>{setActiveTab("dom");setTeamFilter("All");}}/>
+            <Tab label="🏬 SM Manila" active={activeTab==="sm"} onClick={()=>{setActiveTab("sm");setTeamFilter("All");}}/>
+            <Tab label="🏪 Robinsons" active={activeTab==="rob"} onClick={()=>{setActiveTab("rob");setTeamFilter("All");}}/>
+            <Tab label="🏢 Corp Dept" active={activeTab==="corp"} onClick={()=>{setActiveTab("corp");setTeamFilter("All");}}/>
+            <Tab label="📍 Destinations" active={activeTab==="dest"} onClick={()=>setActiveTab("dest")}/>
+            <Tab label="🏆 Team Performance" active={activeTab==="team"} onClick={()=>setActiveTab("team")}/>
+            <Tab label="📋 Agent Progress" active={activeTab==="progress"} onClick={()=>{setActiveTab("progress");setTeamFilter("All");}}/>
+          </div>
+
+          <div style={{padding:20,background:"white",borderRadius:"0 0 10px 10px"}}>
+
+            {/* DEPT TABS */}
+            {["intl","dom","sm","rob","corp"].includes(activeTab)&&(
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))",gap:12,marginBottom:18}}>
+                  <StatCard label={(pLabel+" SRP")} value={fmt(fSRP)} sub={("Target: "+fmt(curTgt))} color="#4f46e5"/>
+                  <StatCard label={(pLabel+" GP Est.")} value={fmt(fGP)} sub="At 20% margin" color="#10b981"/>
+                  <StatCard label="Agents Showing" value={filtered.length} sub={("of "+currentAgents.length+" total")} color="#0ea5e9"/>
+                  <StatCard label="Completion" value={curTgt>0?Math.round(fSRP/curTgt*100)+"%":"—"} sub="vs SRP Target"
+                    color={fSRP/curTgt>=1?"#10b981":fSRP/curTgt>=.75?"#f59e0b":"#ef4444"}/>
+                </div>
+                {filtered.length===0&&currentAgents.length===0?(
+                  <div style={{textAlign:"center",padding:"48px 20px",color:"#9ca3af",fontSize:14}}>
+                    <div style={{fontSize:32,marginBottom:12}}>⏳</div>
+                    Loading {selectedMonth} data...
+                  </div>
+                ):filtered.length===0?(
+                  <div style={{textAlign:"center",padding:"48px 20px",color:"#9ca3af",fontSize:14}}>
+                    🔍 Walang nahanap na "<strong>{search}</strong>"
+                  </div>
+                ):<AgentTable agents={filtered}/>}
+              </div>
+            )}
+
+            {/* DESTINATIONS */}
+            {activeTab==="dest"&&(
+              <div>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  {["All","International","Domestic"].map(f=>(
+                    <button key={f} onClick={()=>setDestFilter(f)} style={{padding:"6px 16px",borderRadius:99,border:"1px solid",borderColor:destFilter===f?"#4f46e5":"#d1d5db",background:destFilter===f?"#4f46e5":"white",color:destFilter===f?"white":"#374151",fontWeight:500,cursor:"pointer",fontSize:13}}>{f}</button>
+                  ))}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#374151",marginBottom:12}}>SRP by Destination (₱M)</div>
+                    <BarChartCJ data={[...filteredDest].sort((a,b)=>b.srp-a.srp)} labelKey="destination" valueKey="srp" label="Total SRP" height={260}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#374151",marginBottom:12}}>Top 5 by SRP</div>
+                    <PieChartCJ data={topDest.map(d=>({name:d.destination,value:d.srp}))} height={260}/>
+                  </div>
+                </div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                  <thead><tr style={{background:"#f9fafb",borderBottom:"2px solid #e5e7eb"}}>
+                    {["Destination","Category","Total SRP","Bookings","Avg/Booking"].map((h,i)=>(
+                      <th key={i} style={{padding:"10px 12px",color:"#374151",textAlign:i>1?"right":"left"}}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {[...filteredDest].sort((a,b)=>b.srp-a.srp).map((d,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:i%2===0?"white":"#fafafa"}}>
+                        <td style={{padding:"10px 12px",fontWeight:600}}>{d.destination}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <span style={{background:d.category==="International"?"#ede9fe":"#d1fae5",color:d.category==="International"?"#5b21b6":"#065f46",fontSize:11,padding:"2px 8px",borderRadius:99}}>{d.category}</span>
+                        </td>
+                        <td style={{padding:"10px 12px",textAlign:"right",fontWeight:600,color:"#4f46e5"}}>{fmt(d.srp)}</td>
+                        <td style={{padding:"10px 12px",textAlign:"right"}}>{d.bookings}</td>
+                        <td style={{padding:"10px 12px",textAlign:"right",color:"#6b7280"}}>{fmt(Math.round(d.srp/d.bookings))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* TEAM PERFORMANCE */}
+            {activeTab==="team"&&(
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
+                  <div>
+                    <div style={{fontSize:12,color:"#6b7280",marginBottom:10}}>SRP vs Target (₱M)</div>
+                    <GroupedBarCJ data={teamChart} height={250}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:12,color:"#6b7280",marginBottom:10}}>Gross Profit by Team (₱M)</div>
+                    <GPBarCJ data={teamChart} height={250}/>
+                  </div>
+                </div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                  <thead><tr style={{background:"#f9fafb",borderBottom:"2px solid #e5e7eb"}}>
+                    {["Team/Branch","Agents","Actual SRP","Target SRP","GP Est.","Completion","Gap"].map((h,i)=>(
+                      <th key={i} style={{padding:"10px 12px",textAlign:i===0?"left":i===5?"center":"right"}}>
+                        {i===2?<span style={{background:"#ede9fe",color:"#4f46e5",padding:"3px 8px",borderRadius:5}}>{h}</span>:i===3?<span style={{background:"#fef3c7",color:"#92400e",padding:"3px 8px",borderRadius:5}}>{h}</span>:i===6?<span style={{background:"#fee2e2",color:"#991b1b",padding:"3px 8px",borderRadius:5}}>{h}</span>:h}
+                      </th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {[...TEAM_PERF].sort((a,b)=>b.total_srp-a.total_srp).map((t,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:i%2===0?"white":"#fafafa"}}>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:"#111827"}}>{t.team}</td>
+                        <td style={{padding:"10px 12px",textAlign:"right"}}>{t.agents}</td>
+                        <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#ede9fe",color:"#4f46e5",fontWeight:700,padding:"4px 10px",borderRadius:6}}>{fmt(t.total_srp)}</span></td>
+                        <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#fef3c7",color:"#92400e",fontWeight:700,padding:"4px 10px",borderRadius:6}}>{fmt(t.target)}</span></td>
+                        <td style={{padding:"10px 12px",textAlign:"right",fontWeight:600,color:"#10b981"}}>{fmt(t.gp)}</td>
+                        <td style={{padding:"10px 12px",textAlign:"center"}}><Badge val={t.completion}/></td>
+                        <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#fee2e2",color:"#991b1b",fontWeight:700,padding:"4px 10px",borderRadius:6}}>-{fmt(t.target-t.total_srp)}</span></td>
+                      </tr>
+                    ))}
+                    <tr style={{background:"#1e1b4b",borderTop:"2px solid #4f46e5"}}>
+                      <td style={{padding:"10px 12px",fontWeight:700,color:"white"}}>GRAND TOTAL</td>
+                      <td style={{padding:"10px 12px",textAlign:"right",color:"white",fontWeight:700}}>{allA.length}</td>
+                      <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#4f46e5",color:"white",fontWeight:700,padding:"4px 10px",borderRadius:6}}>{fmt(totalSRP)}</span></td>
+                      <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#f59e0b",color:"white",fontWeight:700,padding:"4px 10px",borderRadius:6}}>{fmt(totalTgt)}</span></td>
+                      <td style={{padding:"10px 12px",textAlign:"right",fontWeight:700,color:"#6ee7b7"}}>{fmt(totalGP)}</td>
+                      <td style={{padding:"10px 12px",textAlign:"center"}}><Badge val={Math.round(totalSRP/totalTgt*100)}/></td>
+                      <td style={{padding:"10px 12px",textAlign:"right"}}><span style={{background:"#ef4444",color:"white",fontWeight:700,padding:"4px 10px",borderRadius:6}}>-{fmt(totalTgt-totalSRP)}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* AGENT PROGRESS TAB */}
+            {activeTab==="progress"&&(
+              <div>
+                {/* Refresh button for progress tab */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                    <div style={{fontSize:13,color:"#6b7280"}}>
+                      📋 <strong>AGENT PROGRESS (UPDATED)</strong>
+                      {progressAgents.length>0&&<span style={{marginLeft:8,background:"#d1fae5",color:"#065f46",padding:"2px 8px",borderRadius:99,fontSize:11,fontWeight:600}}>{progressAgents.length} agents loaded</span>}
+                    </div>
+                    {/* Month selector for Agent Progress */}
+                    <div style={{display:"flex",alignItems:"center",gap:6,background:"#f0f4ff",borderRadius:8,padding:"5px 10px",border:"1px solid #c7d2fe"}}>
+                      <span style={{fontSize:12}}>📅</span>
+                      <select value={progressMonth} onChange={e=>{
+                        const m=e.target.value;
+                        setProgressMonth(m);
+                        progressLoaded.current=true;
+                        fetchProgressData(m);
+                      }} style={{border:"none",background:"transparent",fontSize:12,fontWeight:600,color:"#4f46e5",cursor:"pointer",outline:"none"}}>
+                        {(()=>{
+                          const months=[];
+                          const now=new Date();
+                          const mnames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                          for(let i=0;i<18;i++){
+                            const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+                            months.push(mnames[d.getMonth()]+" "+d.getFullYear());
+                          }
+                          return months.map(m=><option key={m} value={m}>{m===months[0]?m+" (Current)":m}</option>);
+                        })()}
+                      </select>
+                    </div>
+                    {progressMonth!==CURRENT_MONTH&&(
+                      <span style={{fontSize:11,background:"#fef3c7",color:"#92400e",padding:"3px 8px",borderRadius:99,fontWeight:600}}>
+                        📅 Viewing: {progressMonth}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={()=>{progressLoaded.current=true;fetchProgressData(progressMonth);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",background:"#4f46e5",color:"white",border:"none",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                    🔄 Refresh Agent Progress
+                  </button>
+                </div>
+
+                {progressAgents.length===0?(
+                  <div style={{textAlign:"center",padding:"48px",color:"#9ca3af",fontSize:14}}>
+                    <div style={{fontSize:32,marginBottom:12}}>⏳</div>
+                    Loading Agent Progress data...
+                  </div>
+                ):(()=>{
+                  const progTotal=progressAgents.reduce((s,a)=>s+a.actual_srp,0);
+                  const progGP=progressAgents.reduce((s,a)=>s+a.actual_gp,0);
+                  const progTgt=62055000;
+
+                  return(
+                    <div>
+                      {/* Overall Summary Box */}
+                      <div style={{background:"linear-gradient(135deg,#1e1b4b,#312e81)",borderRadius:10,padding:"16px 20px",marginBottom:16,color:"white"}}>
+                        <div style={{fontSize:11,opacity:.7,textTransform:"uppercase",letterSpacing:".08em",marginBottom:10}}>
+                          📊 Overall MTD Summary — All Departments Combined
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12}}>
+                          {[
+                            {lbl:"TOTAL MTD SRP",val:fmt(progTotal),sub:("Target: "+fmt(progTgt)),color:"#6ee7b7"},
+                            {lbl:"TOTAL GP EST.",val:fmt(progGP),sub:"At 20% margin",color:"white"},
+                            {lbl:"TOTAL AGENTS",val:progressAgents.length,sub:"All departments",color:"white"},
+                            {lbl:"SRP GAP",val:fmt(progTgt-progTotal),sub:"Remaining to hit target",color:"#fca5a5"},
+                            {lbl:"OVERALL COMPLETION",val:Math.round(progTotal/progTgt*100)+"%",sub:"vs Grand Target",color:progTotal/progTgt>=1?"#6ee7b7":progTotal/progTgt>=.75?"#fcd34d":"#fca5a5"},
+                          ].map((s,i)=>(
+                            <div key={i} style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"10px 14px"}}>
+                              <div style={{fontSize:10,opacity:.7,marginBottom:4}}>{s.lbl}</div>
+                              <div style={{fontSize:18,fontWeight:700,color:s.color}}>{s.val}</div>
+                              <div style={{fontSize:11,opacity:.6}}>{s.sub}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Per-Department Cards */}
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:16}}>
+                        {[
+                          {label:"🌏 International",dept:"MAIN INTERNATIONAL",color:"#4f46e5",tgt:DEPT_TARGETS.intl},
+                          {label:"🏠 Domestic",dept:"MAIN DOMESTIC",color:"#10b981",tgt:DEPT_TARGETS.dom},
+                          {label:"🏬 SM Manila",dept:"SM MANILA",color:"#f59e0b",tgt:DEPT_TARGETS.sm},
+                          {label:"🏪 Robinsons",dept:"ROBINSONS",color:"#ef4444",tgt:DEPT_TARGETS.rob},
+                          {label:"🏢 Corp Dept",dept:"CORP",color:"#22c55e",tgt:DEPT_TARGETS.corp},
+                        ].map((d,i)=>{
+                          const dAgents=progressAgents.filter(a=>a.department===d.dept);
+                          const dSRP=dAgents.reduce((s,a)=>s+a.actual_srp,0);
+                          const dGP=dAgents.reduce((s,a)=>s+a.actual_gp,0);
+                          const dComp=Math.round(dSRP/d.tgt*100);
+                          const gap=dSRP-d.tgt;
+                          return(
+                            <div key={i} style={{background:"white",borderRadius:10,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",borderLeft:("4px solid "+d.color)}}>
+                              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>{d.label}</div>
+                              <div style={{fontSize:16,fontWeight:700,color:"#111827"}}>{fmt(dSRP)}</div>
+                              <div style={{fontSize:11,color:"#6b7280",margin:"3px 0"}}>Target: {fmt(d.tgt)}</div>
+                              <div style={{background:"#f3f4f6",height:6,borderRadius:99,margin:"8px 0"}}>
+                                <div style={{background:d.color,height:6,borderRadius:99,width:(Math.min(dComp,100)+"%")}}></div>
+                              </div>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <span style={{fontSize:13,fontWeight:700,color:d.color}}>{dComp}%</span>
+                                <span style={{fontSize:11,background:gap>=0?"#d1fae5":"#fee2e2",color:gap>=0?"#065f46":"#991b1b",padding:"2px 7px",borderRadius:99,fontWeight:600}}>
+                                  {gap>=0?"+":""}{fmt(gap)}
+                                </span>
+                              </div>
+                              <div style={{fontSize:11,color:"#9ca3af",marginTop:6}}>{dAgents.length} agents · GP: {fmt(dGP)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* All Agents Table */}
+                      <div style={{marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#374151"}}>All Agents — Combined View</div>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          {["All","MAIN INTERNATIONAL","MAIN DOMESTIC","SM MANILA","ROBINSONS","CORP"].map(dept=>(
+                            <button key={dept} onClick={()=>setProgressDeptFilter(dept)}
+                              style={{padding:"4px 12px",borderRadius:99,border:"1px solid",fontSize:11,cursor:"pointer",fontWeight:500,
+                                borderColor:progressDeptFilter===dept?"#4f46e5":"#d1d5db",
+                                background:progressDeptFilter===dept?"#4f46e5":"white",
+                                color:progressDeptFilter===dept?"white":"#374151"}}>
+                              {dept==="All"?"All Departments":dept}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{overflowX:"auto",borderRadius:8,border:"1px solid #e5e7eb"}}>
+                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                          <thead>
+                            <tr style={{background:"#1e1b4b"}}>
+                              {["#","Agent Name","Department","Team","Status","GP Target","Actual GP","Actual SRP","%","GP Gap"].map((h,i)=>(
+                                <th key={i} style={{padding:"9px 10px",color:"white",fontWeight:600,textAlign:i<=4?"left":"right",whiteSpace:"nowrap"}}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {progressAgents
+                              .filter(a=>progressDeptFilter==="All"||a.department===progressDeptFilter)
+                              .filter(a=>!search||(a.name.toLowerCase().includes(search.toLowerCase())||(a.team||"").toLowerCase().includes(search.toLowerCase())))
+                              .sort((a,b)=>b.actual_srp-a.actual_srp)
+                              .map((a,i)=>{
+                                const gap=a.actual_gp-a.target;
+                                const rowBg=a.completion>=100?"#f0fdf4":a.completion>=75?"#fffbeb":a.completion>=50?"#fff7ed":"#fff1f2";
+                                const rowBorder=a.completion>=100?"#10b981":a.completion>=75?"#f59e0b":a.completion>=50?"#f97316":"#ef4444";
+                                const deptColors={"MAIN INTERNATIONAL":"#4f46e5","MAIN DOMESTIC":"#10b981","SM MANILA":"#f59e0b","ROBINSONS":"#ef4444","CORP":"#22c55e"};
+                                const tc=TEAM_COLORS[a.team]||{bg:"#f3f4f6",color:"#374151",border:"#9ca3af"};
+                                return(
+                                  <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:rowBg,borderLeft:("3px solid "+rowBorder)}}>
+                                    <td style={{padding:"8px 10px",color:"#9ca3af",fontWeight:500}}>{i+1}</td>
+                                    <td style={{padding:"8px 10px",fontWeight:700,color:"#111827"}}>{a.name}</td>
+                                    <td style={{padding:"8px 10px"}}>
+                                      <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,fontWeight:600,background:(deptColors[a.department]||"#6b7280")+"22",color:deptColors[a.department]||"#6b7280"}}>{a.department}</span>
+                                    </td>
+                                    <td style={{padding:"8px 10px"}}>
+                                      <span style={{background:tc.bg,color:tc.color,border:("1px solid "+tc.border),fontSize:10,padding:"2px 6px",borderRadius:99,fontWeight:600,whiteSpace:"nowrap"}}>{a.team||"—"}</span>
+                                    </td>
+                                    <td style={{padding:"8px 10px"}}>
+                                      <span style={{background:a.status==="PROBI"||a.status==="Probationary"?"#fef3c7":"#ede9fe",color:a.status==="PROBI"||a.status==="Probationary"?"#92400e":"#5b21b6",fontSize:10,padding:"2px 6px",borderRadius:99,fontWeight:600}}>{a.status}</span>
+                                    </td>
+                                    <td style={{padding:"8px 10px",textAlign:"right",color:"#6b7280"}}>{fmt(a.target)}</td>
+                                    <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#111827"}}>{fmt(a.actual_gp)}</td>
+                                    <td style={{padding:"8px 10px",textAlign:"right",color:"#374151"}}>{fmt(a.actual_srp)}</td>
+                                    <td style={{padding:"8px 10px",textAlign:"right"}}><Badge val={a.completion}/></td>
+                                    <td style={{padding:"8px 10px",textAlign:"right"}}>
+                                      <span style={{background:gap>=0?"#d1fae5":a.completion>=75?"#fef3c7":a.completion>=50?"#ffedd5":"#fee2e2",color:gap>=0?"#065f46":a.completion>=75?"#92400e":a.completion>=50?"#9a3412":"#991b1b",fontWeight:700,padding:"2px 7px",borderRadius:5,fontSize:11}}>
+                                        {gap>=0?"+":""}{fmt(gap)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                          <tfoot>
+                            {/* Per-department subtotals — styled like team headers */}
+                            {[
+                              {dept:"MAIN INTERNATIONAL",label:"🌏 International",color:"#4f46e5",bg:"#ede9fe",textColor:"#3730a3",tgt:DEPT_TARGETS.intl},
+                              {dept:"MAIN DOMESTIC",label:"🏠 Domestic",color:"#10b981",bg:"#d1fae5",textColor:"#065f46",tgt:DEPT_TARGETS.dom},
+                              {dept:"SM MANILA",label:"🏬 SM Manila",color:"#f59e0b",bg:"#fef3c7",textColor:"#92400e",tgt:DEPT_TARGETS.sm},
+                              {dept:"ROBINSONS",label:"🏪 Robinsons",color:"#ef4444",bg:"#fee2e2",textColor:"#991b1b",tgt:DEPT_TARGETS.rob},
+                              {dept:"CORP",label:"🏢 Corp Dept",color:"#22c55e",bg:"#f0fdf4",textColor:"#14532d",tgt:DEPT_TARGETS.corp},
+                            ].map((d,i)=>{
+                              const dFiltered=progressAgents.filter(a=>a.department===d.dept&&(progressDeptFilter==="All"||a.department===progressDeptFilter));
+                              if(dFiltered.length===0)return null;
+                              const dSRP=dFiltered.reduce((s,a)=>s+a.actual_srp,0);
+                              const dGP=dFiltered.reduce((s,a)=>s+a.actual_gp,0);
+                              const dComp=Math.round(dSRP/d.tgt*100);
+                              const dGap=dSRP-d.tgt;
+                              return(
+                                <tr key={i} style={{background:d.bg,borderTop:("2px solid "+d.color)}}>
+                                  <td colSpan={3} style={{padding:"9px 12px",fontWeight:700,color:d.textColor,fontSize:13}}>
+                                    <span style={{background:d.color,color:"white",padding:"3px 10px",borderRadius:99,fontSize:11,marginRight:8,fontWeight:700}}>{d.label}</span>
+                                    <span style={{fontSize:11,fontWeight:500,opacity:.8}}>{dFiltered.length} agents</span>
+                                  </td>
+                                  <td style={{padding:"9px 12px",textAlign:"right",color:d.textColor,fontSize:12,fontWeight:600}}>{fmt(d.tgt)}</td>
+                                  <td style={{padding:"9px 12px",textAlign:"right",color:d.textColor,fontSize:13,fontWeight:700}}>{fmt(dGP)}</td>
+                                  <td style={{padding:"9px 12px",textAlign:"right",color:d.textColor,fontSize:13,fontWeight:700}}>{fmt(dSRP)}</td>
+                                  <td style={{padding:"9px 12px",textAlign:"center"}}><Badge val={dComp}/></td>
+                                  <td style={{padding:"9px 12px",textAlign:"right"}}>
+                                    <span style={{background:dGap>=0?"#d1fae5":"#fee2e2",color:dGap>=0?"#065f46":"#991b1b",fontWeight:700,padding:"3px 9px",borderRadius:6,fontSize:12}}>
+                                      {dGap>=0?"+":""}{fmt(dGap)}
+                                    </span>
+                                  </td>
+                                  <td colSpan={2}></td>
+                                </tr>
+                              );
+                            })}
+                            {/* Grand Total */}
+                            <tr style={{background:"#1e1b4b",borderTop:"3px solid #4f46e5"}}>
+                              <td colSpan={3} style={{padding:"11px 12px",fontWeight:700,color:"white",fontSize:14}}>
+                                <span style={{background:"#4f46e5",color:"white",padding:"3px 12px",borderRadius:99,fontSize:12,marginRight:8}}>GRAND TOTAL</span>
+                                <span style={{fontSize:12,opacity:.7}}>{progressAgents.filter(a=>progressDeptFilter==="All"||a.department===progressDeptFilter).length} agents</span>
+                              </td>
+                              <td style={{padding:"11px 12px",textAlign:"right",color:"#a5b4fc",fontWeight:700}}>{fmt(progTgt)}</td>
+                              <td style={{padding:"11px 12px",textAlign:"right",fontWeight:700,color:"#6ee7b7",fontSize:14}}>{fmt(progGP)}</td>
+                              <td style={{padding:"11px 12px",textAlign:"right"}}><span style={{background:"#4f46e5",color:"white",fontWeight:700,padding:"4px 12px",borderRadius:6,fontSize:14}}>{fmt(progTotal)}</span></td>
+                              <td style={{padding:"11px 12px",textAlign:"center"}}><Badge val={Math.round(progTotal/progTgt*100)}/></td>
+                              <td style={{padding:"11px 12px",textAlign:"right"}}><span style={{background:"#ef4444",color:"white",fontWeight:700,padding:"4px 12px",borderRadius:6}}>-{fmt(progTgt-progTotal)}</span></td>
+                              <td colSpan={2}></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+      <div style={{padding:"12px 24px 24px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>
+        Gladex Travel & Tours · INTL/DOM Sales Dashboard · Data from Google Sheets · Auto-sync every 60s
+      </div>
+
+      {/* ─── SALES ALERT MODAL ─────────────────────────────────────────────── */}
+      {showSalesAlert&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowSalesAlert(false);}}>
+          <div style={{background:"linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%)",borderRadius:16,width:"100%",maxWidth:800,maxHeight:"85vh",overflowY:"auto",border:"1px solid rgba(255,255,255,.1)",boxShadow:"0 25px 60px rgba(0,0,0,.5)"}}>
+            {/* Modal Header */}
+            <div style={{padding:"20px 24px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:20,fontWeight:700,color:"white"}}>🏆 Sales Achievements</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:4}}>
+                  Real-time monitoring · All departments ·{" "}
+                  <a href="/photo-manager.html" target="_blank" style={{color:"#a5b4fc",textDecoration:"none"}}>
+                    📷 Manage Photos →
+                  </a>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <button onClick={()=>{
+                  setSalesAlertData(null);
+                  computeSalesAlerts().then(alerts=>{
+                    setSalesAlertData(alerts);
+                    if(alerts.some(a=>a.type==="streak"))playGong();
+                    else if(alerts.some(a=>a.type==="blitz"))playChime();
+                  });
+                }} style={{padding:"6px 14px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,color:"white",fontSize:12,cursor:"pointer"}}>
+                  🔄 Refresh
+                </button>
+                <button onClick={()=>setShowSalesAlert(false)}
+                  style={{width:32,height:32,borderRadius:"50%",border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"white",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div style={{padding:"12px 24px",display:"flex",gap:16,borderBottom:"1px solid rgba(255,255,255,.1)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:20}}>🔥</span>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#fbbf24"}}>Day Streak</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>4+ consecutive days with sale</div>
+                </div>
+              </div>
+              <div style={{width:1,background:"rgba(255,255,255,.1)"}}></div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:20}}>⚡</span>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#60a5fa"}}>Daily Blitz</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>4+ sales in a single day</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{padding:24}}>
+              {!salesAlertData?(
+                <div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,.5)"}}>
+                  <div style={{fontSize:40,marginBottom:12}}>⏳</div>
+                  <div>Analyzing sales data from all departments...</div>
+                </div>
+              ):salesAlertData.length===0?(
+                <div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,.5)"}}>
+                  <div style={{fontSize:40,marginBottom:12}}>📊</div>
+                  <div style={{fontSize:16,fontWeight:600,marginBottom:8}}>No achievements yet today</div>
+                  <div style={{fontSize:13}}>Achievements unlock at 4 consecutive days or 4 sales in a day</div>
+                </div>
+              ):(
+                <div>
+                  {/* Streak Achievements */}
+                  {salesAlertData.filter(a=>a.type==="streak").length>0&&(
+                    <div style={{marginBottom:24}}>
+                      <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                        🔥 Day Streak Achievers
+                        <span style={{background:"rgba(251,191,36,.2)",border:"1px solid rgba(251,191,36,.4)",color:"#fbbf24",fontSize:11,padding:"2px 8px",borderRadius:99}}>{salesAlertData.filter(a=>a.type==="streak").length} agents</span>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+                        {salesAlertData.filter(a=>a.type==="streak").map((a,i)=>(
+                          <div key={i} style={{background:"linear-gradient(135deg,rgba(251,191,36,.15),rgba(239,68,68,.1))",border:"1px solid rgba(251,191,36,.3)",borderRadius:12,padding:16,textAlign:"center",position:"relative",overflow:"hidden"}}>
+                            <div style={{position:"absolute",top:8,right:10,fontSize:28,opacity:.15}}>🔥</div>
+                            {/* Agent Photo */}
+                            <div style={{width:72,height:72,borderRadius:"50%",margin:"0 auto 10px",border:"3px solid #fbbf24",overflow:"hidden",background:"linear-gradient(135deg,#4f46e5,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              {a.photo?(
+                                <img src={a.photo} alt={a.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              ):(
+                                <div style={{fontSize:28,fontWeight:700,color:"white"}}>
+                                  {a.name.split(" ").map(w=>w[0]).slice(0,2).join("")}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{fontSize:13,fontWeight:700,color:"white",marginBottom:4}}>{a.name}</div>
+                            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:8}}>{a.dept}</div>
+                            <div style={{background:"rgba(251,191,36,.2)",border:"1px solid rgba(251,191,36,.4)",borderRadius:8,padding:"6px 10px"}}>
+                              <div style={{fontSize:24,fontWeight:700,color:"#fbbf24"}}>{a.value}</div>
+                              <div style={{fontSize:10,color:"rgba(255,255,255,.6)"}}>Consecutive Days 🔥</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Daily Blitz Achievements */}
+                  {salesAlertData.filter(a=>a.type==="blitz").length>0&&(
+                    <div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#60a5fa",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                        ⚡ Daily Blitz Achievers
+                        <span style={{background:"rgba(96,165,250,.2)",border:"1px solid rgba(96,165,250,.4)",color:"#60a5fa",fontSize:11,padding:"2px 8px",borderRadius:99}}>{salesAlertData.filter(a=>a.type==="blitz").length} agents</span>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+                        {salesAlertData.filter(a=>a.type==="blitz").map((a,i)=>(
+                          <div key={i} style={{background:"linear-gradient(135deg,rgba(96,165,250,.15),rgba(139,92,246,.1))",border:"1px solid rgba(96,165,250,.3)",borderRadius:12,padding:16,textAlign:"center",position:"relative",overflow:"hidden"}}>
+                            <div style={{position:"absolute",top:8,right:10,fontSize:28,opacity:.15}}>⚡</div>
+                            <div style={{width:72,height:72,borderRadius:"50%",margin:"0 auto 10px",border:"3px solid #60a5fa",overflow:"hidden",background:"linear-gradient(135deg,#0ea5e9,#4f46e5)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              {a.photo?(
+                                <img src={a.photo} alt={a.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              ):(
+                                <div style={{fontSize:28,fontWeight:700,color:"white"}}>
+                                  {a.name.split(" ").map(w=>w[0]).slice(0,2).join("")}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{fontSize:13,fontWeight:700,color:"white",marginBottom:4}}>{a.name}</div>
+                            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:8}}>{a.dept}</div>
+                            <div style={{background:"rgba(96,165,250,.2)",border:"1px solid rgba(96,165,250,.4)",borderRadius:8,padding:"6px 10px"}}>
+                              <div style={{fontSize:24,fontWeight:700,color:"#60a5fa"}}>{a.value}</div>
+                              <div style={{fontSize:10,color:"rgba(255,255,255,.6)"}}>Sales Today ⚡</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

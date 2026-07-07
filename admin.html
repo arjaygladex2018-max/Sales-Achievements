@@ -3,9 +3,302 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gladex Admin — User Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a1a;min-height:100vh;color:white}
+/* Login */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#1e1b4b);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:40px;width:100%;max-width:380px;text-align:center}
+.logo{width:60px;height:60px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 18px}
+h1.login-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.field{margin-bottom:14px;text-align:left}
+.field label{font-size:12px;color:rgba(255,255,255,.5);display:block;margin-bottom:6px;font-weight:500}
+.field input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:11px 14px;color:white;font-size:14px;font-family:inherit;outline:none}
+.field input:focus{border-color:#7c3aed;background:rgba(124,58,237,.08)}
+.btn-primary{width:100%;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:9px;padding:12px;color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+.btn-primary:hover{opacity:.9}
+.err{font-size:12px;color:#fca5a5;text-align:center;margin-top:10px;min-height:16px}
+/* App */
+#app{display:none}
+.header{background:linear-gradient(135deg,#1e1b4b,#0f172a);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-logo .icon{width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-logo h1{font-size:16px;font-weight:700}
+.header-logo p{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+.hdr-btns{display:flex;gap:8px}
+.btn-sm{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:7px;color:white;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;gap:5px}
+.btn-sm:hover{background:rgba(255,255,255,.15)}
+.main{max-width:900px;margin:0 auto;padding:28px 20px}
+/* Create user card */
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-bottom:24px}
+.card-hdr{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.card-hdr h2{font-size:14px;font-weight:700}
+.card-body{padding:20px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.form-field label{font-size:11px;color:rgba(255,255,255,.45);display:block;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.form-field input,.form-field select{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:white;font-size:13px;font-family:inherit;outline:none}
+.form-field input:focus,.form-field select:focus{border-color:#7c3aed}
+.form-field select option{background:#1e1b4b}
+.btn-create{background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:8px;padding:10px 20px;color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-create:hover{opacity:.9}
+.msg{font-size:12px;padding:8px 12px;border-radius:7px;margin-top:10px}
+.msg.success{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.msg.error{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+/* Users table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:rgba(255,255,255,.04)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
+tbody tr{border-top:1px solid rgba(255,255,255,.05)}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+td{padding:11px 14px;color:rgba(255,255,255,.85)}
+.badge{font-size:10px;padding:3px 8px;border-radius:99px;font-weight:600}
+.badge-admin{background:rgba(124,58,237,.2);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
+.badge-viewer{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.badge-active{background:rgba(16,185,129,.15);color:#6ee7b7}
+.badge-inactive{background:rgba(239,68,68,.15);color:#fca5a5}
+.action-btns{display:flex;gap:6px}
+.btn-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.btn-del:hover{background:rgba(239,68,68,.25)}
+.btn-reset{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.loading{text-align:center;padding:32px;color:rgba(255,255,255,.3);font-size:13px}
+.empty{text-align:center;padding:32px;color:rgba(255,255,255,.3);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- ADMIN LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">⚙️</div>
+    <h1 class="login-title">Admin Panel</h1>
+    <div class="login-sub">Gladex Travel & Tours · User Management</div>
+    <div class="field"><label>Admin Email</label><input type="email" id="adminEmail" placeholder="admin@gladex.com"></div>
+    <div class="field"><label>Password</label><input type="password" id="adminPass" placeholder="Admin password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <button class="btn-primary" onclick="adminLogin()">🔐 Login as Admin</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">
+      <div class="icon">⚙️</div>
+      <div>
+        <h1>Admin Panel — User Management</h1>
+        <p>Gladex Travel & Tours · Create and manage user accounts</p>
+      </div>
+    </div>
+    <div class="hdr-btns">
+      <a href="/achievements.html" class="btn-sm" target="_blank">🏆 Achievements</a>
+      <a href="/" class="btn-sm">← Dashboard</a>
+      <button class="btn-sm" onclick="adminLogout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Create User -->
+    <div class="card">
+      <div class="card-hdr">
+        <span style="font-size:18px">➕</span>
+        <h2>Create New User Account</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-field"><label>Full Name</label><input type="text" id="newName" placeholder="e.g. Hazel Lamar"></div>
+          <div class="form-field"><label>Email (used for login)</label><input type="email" id="newEmail" placeholder="hazel@gladex.com"></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-field"><label>Password</label><input type="text" id="newPass" placeholder="Set password for user"></div>
+          <div class="form-field"><label>Role</label>
+            <select id="newRole">
+              <option value="viewer">👁 Viewer (Achievements only)</option>
+              <option value="agent">👤 Agent</option>
+              <option value="admin">⚙️ Admin (Full access)</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Department</label>
+            <select id="newDept">
+              <option value="">All Departments</option>
+              <option value="MAIN INTERNATIONAL">🌏 International</option>
+              <option value="MAIN DOMESTIC">🏠 Domestic</option>
+              <option value="SM MANILA">🏬 SM Manila</option>
+              <option value="ROBINSONS">🏪 Robinsons</option>
+              <option value="CORP">🏢 Corp Dept</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-create" onclick="createUser()">➕ Create Account</button>
+          <div id="createMsg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users List -->
+    <div class="card">
+      <div class="card-hdr">
+        <span style="font-size:18px">👥</span>
+        <h2>All User Accounts</h2>
+        <span id="userCount" style="font-size:11px;color:rgba(255,255,255,.4);margin-left:auto"></span>
+        <button class="btn-sm" onclick="loadUsers()" style="margin-left:8px">🔄 Refresh</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div id="usersList"><div class="loading">Loading users...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL="https://snpbgypqxrwabxepdbbn.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucGJneXBxeHJ3YWJ4ZXBkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNTAxNTIsImV4cCI6MjA5ODcyNjE1Mn0.-ZVVueuhoiAB3cvVdmmf5GJFOxlYUKyRqsddCsns8po";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+// ── ADMIN LOGIN ────────────────────────────────────────────────
+async function adminLogin(){
+  const email=document.getElementById("adminEmail").value.trim();
+  const pass=document.getElementById("adminPass").value;
+  const err=document.getElementById("loginErr");
+  if(!email||!pass){err.textContent="Please enter email and password";return;}
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error)throw error;
+    // Check if admin role
+    const{data:profile}=await sb.from("user_profiles").select("role").eq("id",data.user.id).single();
+    if(!profile||profile.role!=="admin"){
+      await sb.auth.signOut();
+      throw new Error("Access denied — admin account required");
+    }
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("app").style.display="block";
+    loadUsers();
+  }catch(e){err.textContent=e.message;}
+}
+
+function adminLogout(){
+  sb.auth.signOut();
+  document.getElementById("app").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("adminPass").value="";
+}
+
+// ── CREATE USER ────────────────────────────────────────────────
+async function createUser(){
+  const name=document.getElementById("newName").value.trim();
+  const email=document.getElementById("newEmail").value.trim();
+  const pass=document.getElementById("newPass").value.trim();
+  const role=document.getElementById("newRole").value;
+  const dept=document.getElementById("newDept").value;
+  const msgEl=document.getElementById("createMsg");
+
+  if(!name||!email||!pass){showMsg(msgEl,"Please fill in all required fields","error");return;}
+  if(pass.length<6){showMsg(msgEl,"Password must be at least 6 characters","error");return;}
+
+  showMsg(msgEl,"Creating account...","");
+  try{
+    // Create auth user using admin API via edge function — fallback: use signUp
+    const{data,error}=await sb.auth.signUp({
+      email,password:pass,
+      options:{data:{full_name:name,role,department:dept}}
+    });
+    if(error)throw error;
+
+    // Save profile to user_profiles table
+    const{error:profileErr}=await sb.from("user_profiles").upsert({
+      id:data.user.id,
+      email,name,role,department:dept||null,
+      created_at:new Date().toISOString()
+    });
+    if(profileErr)throw profileErr;
+
+    showMsg(msgEl,"✅ Account created for "+name,"success");
+    // Clear form
+    ["newName","newEmail","newPass"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("newRole").value="viewer";
+    document.getElementById("newDept").value="";
+    loadUsers();
+  }catch(e){showMsg(msgEl,"❌ "+e.message,"error");}
+}
+
+// ── LOAD USERS ─────────────────────────────────────────────────
+async function loadUsers(){
+  document.getElementById("usersList").innerHTML='<div class="loading">Loading...</div>';
+  try{
+    const{data,error}=await sb.from("user_profiles").select("*").order("created_at",{ascending:false});
+    if(error)throw error;
+    document.getElementById("userCount").textContent=data.length+" accounts";
+    if(!data.length){
+      document.getElementById("usersList").innerHTML='<div class="empty">No user accounts yet. Create one above.</div>';
+      return;
+    }
+    const rows=data.map((u,i)=>`
+      <tr>
+        <td style="font-weight:600">${u.name||"—"}</td>
+        <td style="color:rgba(255,255,255,.6)">${u.email}</td>
+        <td><span class="badge ${u.role==="admin"?"badge-admin":"badge-viewer"}">${u.role==="admin"?"⚙️ Admin":u.role==="agent"?"👤 Agent":"👁 Viewer"}</span></td>
+        <td style="color:rgba(255,255,255,.5);font-size:12px">${u.department||"All Depts"}</td>
+        <td style="font-size:11px;color:rgba(255,255,255,.35)">${u.created_at?new Date(u.created_at).toLocaleDateString("en-PH"):"—"}</td>
+        <td><div class="action-btns">
+          <button class="btn-reset" onclick="resetPassword('${u.email}','${u.name||""}')">🔑 Reset PW</button>
+          <button class="btn-del" onclick="deleteUser('${u.id}','${u.name||u.email}')">🗑 Delete</button>
+        </div></td>
+      </tr>`).join("");
+    document.getElementById("usersList").innerHTML=`
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }catch(e){document.getElementById("usersList").innerHTML='<div class="empty">Error: '+e.message+'</div>';}
+}
+
+// ── RESET PASSWORD ─────────────────────────────────────────────
+async function resetPassword(email,name){
+  const newPass=prompt("Enter new password for "+name+" ("+email+"):\n(min 6 characters)");
+  if(!newPass)return;
+  if(newPass.length<6){alert("Password must be at least 6 characters");return;}
+  try{
+    // Update via Supabase admin — using auth.admin requires service key
+    // Workaround: send password reset email
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/achievements.html"});
+    if(error)throw error;
+    alert("✅ Password reset email sent to "+email);
+  }catch(e){alert("❌ "+e.message);}
+}
+
+// ── DELETE USER ────────────────────────────────────────────────
+async function deleteUser(id,name){
+  if(!confirm("Delete account for "+name+"?\nThis cannot be undone."))return;
+  try{
+    const{error}=await sb.from("user_profiles").delete().eq("id",id);
+    if(error)throw error;
+    alert("✅ Account deleted: "+name);
+    loadUsers();
+  }catch(e){alert("❌ "+e.message);}
+}
+
+function showMsg(el,msg,type){
+  el.textContent=msg;
+  el.className="msg "+(type||"");
+  if(type==="success")setTimeout(()=>{el.textContent="";el.className="msg";},4000);
+}
+
+// Auto-check session
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&event!=="SIGNED_OUT"){
+    sb.from("user_profiles").select("role").eq("id",session.user.id).single().then(({data})=>{
+      if(data?.role==="admin"){
+        document.getElementById("loginScreen").style.display="none";
+        document.getElementById("app").style.display="block";
+        loadUsers();
+      }
+    });
   }
+});
+</script>
+</body>
+</html>

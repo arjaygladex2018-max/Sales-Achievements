@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gladex Agent Photo Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:white;min-height:100vh}
+.header{background:linear-gradient(135deg,#1e1b4b,#312e81);padding:20px 28px;border-bottom:1px solid rgba(255,255,255,.1)}
+.header h1{font-size:20px;font-weight:700}
+.header p{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
+.container{padding:24px;max-width:1200px;margin:0 auto}
+.instructions{background:rgba(79,70,229,.15);border:1px solid rgba(79,70,229,.3);border-radius:10px;padding:16px 20px;margin-bottom:24px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.8)}
+.instructions strong{color:#a5b4fc}
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.agent-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;text-align:center;transition:border-color .2s}
+.agent-card:hover{border-color:rgba(79,70,229,.5)}
+.agent-card.has-photo{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.05)}
+.photo-circle{width:80px;height:80px;border-radius:50%;margin:0 auto 12px;overflow:hidden;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white;position:relative;cursor:pointer;border:3px solid rgba(255,255,255,.1)}
+.has-photo .photo-circle{border-color:#10b981}
+.photo-circle img{width:100%;height:100%;object-fit:cover}
+.photo-circle .overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:24px;border-radius:50%}
+.photo-circle:hover .overlay{opacity:1}
+.agent-name{font-size:12px;font-weight:700;color:white;margin-bottom:4px}
+.agent-dept{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:10px}
+.upload-btn{background:rgba(79,70,229,.3);border:1px solid rgba(79,70,229,.5);color:#a5b4fc;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;width:100%;font-family:inherit}
+.upload-btn:hover{background:rgba(79,70,229,.5)}
+.remove-btn{background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;margin-top:4px;width:100%;font-family:inherit}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot-green{background:#10b981}
+.dot-gray{background:#6b7280}
+.output-section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:20px}
+.output-section h3{font-size:14px;font-weight:700;margin-bottom:12px;color:#a5b4fc}
+.copy-area{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#6ee7b7;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;line-height:1.5}
+.copy-btn{margin-top:10px;background:#4f46e5;border:none;color:white;padding:8px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit}
+.copy-btn:hover{background:#4338ca}
+.copy-btn.copied{background:#10b981}
+.stats{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 16px;font-size:12px}
+.stat span{color:#a5b4fc;font-weight:700;font-size:16px;display:block}
+input[type=file]{display:none}
+.search-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 14px;color:white;font-size:13px;width:300px;outline:none;font-family:inherit}
+.search-box::placeholder{color:rgba(255,255,255,.3)}
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.dept-filter{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 12px;color:white;font-size:12px;cursor:pointer;font-family:inherit}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1>✈️ Gladex Agent Photo Manager</h1>
+  <p>Upload and manage agent photos for the Sales Alert Dashboard
+  <span id="sbStatus" style="margin-left:12px;font-size:11px;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.2);color:#fca5a5">
+    ⚠️ Add anon key for Supabase sync
+  </span>
+</p>
+</div>
+
+<div class="container">
+  <div class="instructions">
+    <strong>How to use:</strong><br>
+    1. Click on an agent's photo circle (or Upload button) to select a photo<br>
+    2. Photo will be saved automatically in your browser<br>
+    3. Once done, click <strong>"Generate Code"</strong> at the bottom<br>
+    4. Copy the generated code and paste it into <strong>index.html</strong> inside the <code>AGENT_PHOTOS</code> object
+  </div>
+
+  <div class="toolbar">
+    <input type="text" class="search-box" placeholder="🔍 Search agent name..." id="searchBox" oninput="filterAgents()">
+    <select class="dept-filter" id="deptFilter" onchange="filterAgents()">
+      <option value="all">All Departments</option>
+      <option value="MAIN INTERNATIONAL">🌏 International</option>
+      <option value="MAIN DOMESTIC">🏠 Domestic</option>
+      <option value="SM MANILA">🏬 SM Manila</option>
+      <option value="ROBINSONS">🏪 Robinsons</option>
+      <option value="CORP">🏢 Corp Dept</option>
+    </select>
+  </div>
+
+  <div class="stats">
+    <div class="stat">Total Agents<span id="totalCount">0</span></div>
+    <div class="stat">Photos Uploaded<span id="uploadedCount">0</span></div>
+    <div class="stat">Missing Photos<span id="missingCount">0</span></div>
+  </div>
+
+  <div class="agents-grid" id="agentsGrid"></div>
+
+  <div class="output-section">
+    <h3>📋 Generated Code — Paste into index.html</h3>
+    <p style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px">Find <code style="color:#a5b4fc">const AGENT_PHOTOS={</code> in index.html and replace the entire object with this:</p>
+    <div class="copy-area" id="outputCode">// Click "Generate Code" to see the output here</div>
+    <button class="copy-btn" onclick="generateAndCopy()" id="copyBtn">⚡ Generate & Copy Code</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+
+<script>
+// Supabase config (same as dashboard)
+const SUPABASE_URL="https://snpbgypqxrwabxepdbbn.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucGJneXBxeHJ3YWJ4ZXBkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNTAxNTIsImV4cCI6MjA5ODcyNjE1Mn0.-ZVVueuhoiAB3cvVdmmf5GJFOxlYUKyRqsddCsns8po";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+async function savePhotoToSupabase(agentName, base64) {
+  if(!sb) return;
+  const {error} = await sb.from("agent_photos").upsert({
+    agent_name: agentName,
+    photo_base64: base64,
+    updated_at: new Date().toISOString()
+  }, {onConflict: "agent_name"});
+  if(error) console.error("Supabase save error:", error);
+  else console.log("✅ Photo saved to Supabase:", agentName);
+}
+
+// All agents from the dashboard
+const AGENTS = [
+  // MAIN INTERNATIONAL
+  {name:"Hazel Lamar",dept:"MAIN INTERNATIONAL"},{name:"Cristine Mae Ramirez",dept:"MAIN INTERNATIONAL"},
+  {name:"Aira Bernandez",dept:"MAIN INTERNATIONAL"},{name:"Justin Kaye Daganta",dept:"MAIN INTERNATIONAL"},
+  {name:"Kaylene Daluz",dept:"MAIN INTERNATIONAL"},{name:"Juliana Yabut",dept:"MAIN INTERNATIONAL"},
+  {name:"Patricia Kyle Castaneda",dept:"MAIN INTERNATIONAL"},{name:"Nathanael Johann Sebastian",dept:"MAIN INTERNATIONAL"},
+  {name:"Mary Joy De Vera",dept:"MAIN INTERNATIONAL"},{name:"Paige Viray",dept:"MAIN INTERNATIONAL"},
+  {name:"Alyzza Joy Landicho",dept:"MAIN INTERNATIONAL"},{name:"Moriel Cruz",dept:"MAIN INTERNATIONAL"},
+  {name:"Bianca Mae Timbre",dept:"MAIN INTERNATIONAL"},{name:"Ella Ramos",dept:"MAIN INTERNATIONAL"},
+  {name:"Henry Lim",dept:"MAIN INTERNATIONAL"},{name:"Ruben Figueroa",dept:"MAIN INTERNATIONAL"},
+  {name:"Malyn Marie Morales",dept:"MAIN INTERNATIONAL"},{name:"Rose Ann Valle",dept:"MAIN INTERNATIONAL"},
+  {name:"Elijah Mikaela Abuan",dept:"MAIN INTERNATIONAL"},{name:"Alliah Cyrile Sunga",dept:"MAIN INTERNATIONAL"},
+  {name:"Jhamie Lein Garin",dept:"MAIN INTERNATIONAL"},{name:"Rozhely Cornejo",dept:"MAIN INTERNATIONAL"},
+  {name:"Denise Ysabelle Casin",dept:"MAIN INTERNATIONAL"},
+  // MAIN DOMESTIC
+  {name:"Riannon Imperial",dept:"MAIN DOMESTIC"},{name:"Charles Lagria",dept:"MAIN DOMESTIC"},
+  {name:"Sigrid Colyne Naomi Paz",dept:"MAIN DOMESTIC"},{name:"Shane Satentes",dept:"MAIN DOMESTIC"},
+  {name:"Marilen Reynaldo",dept:"MAIN DOMESTIC"},{name:"Joan Cervantes",dept:"MAIN DOMESTIC"},
+  {name:"Jayrald Galleto",dept:"MAIN DOMESTIC"},{name:"Stacy Lumanog",dept:"MAIN DOMESTIC"},
+  {name:"Noel Sunga Jr",dept:"MAIN DOMESTIC"},{name:"Jessa G. Gorit",dept:"MAIN DOMESTIC"},
+  {name:"Kimberly Joy Verdeblanco",dept:"MAIN DOMESTIC"},{name:"Kaye Therese Dedal",dept:"MAIN DOMESTIC"},
+  {name:"Pia De Guzman",dept:"MAIN DOMESTIC"},{name:"Laine Munez",dept:"MAIN DOMESTIC"},
+  {name:"Rica Niepez",dept:"MAIN DOMESTIC"},{name:"Kyla Mangao",dept:"MAIN DOMESTIC"},
+  {name:"Alvaro Alba",dept:"MAIN DOMESTIC"},
+  // SM MANILA
+  {name:"Bianca Evangelista",dept:"SM MANILA"},{name:"Norma De Leon",dept:"SM MANILA"},
+  {name:"Isabelita Caunan",dept:"SM MANILA"},{name:"Evelyn Navarro",dept:"SM MANILA"},
+  {name:"Shiela",dept:"SM MANILA"},{name:"Lovely",dept:"SM MANILA"},
+  {name:"Krylla",dept:"SM MANILA"},{name:"Gene",dept:"SM MANILA"},
+  {name:"Baye",dept:"SM MANILA"},{name:"Edmar",dept:"SM MANILA"},
+  {name:"Marie",dept:"SM MANILA"},{name:"Jazzmine",dept:"SM MANILA"},
+  // ROBINSONS
+  {name:"Maiko Neil Nuque",dept:"ROBINSONS"},{name:"Ashlyn Khye Oatis",dept:"ROBINSONS"},
+  {name:"Mary Claire Fernandez",dept:"ROBINSONS"},{name:"Eleonor Dela Cruz",dept:"ROBINSONS"},
+  {name:"Jazzmine May Bustalina",dept:"ROBINSONS"},{name:"Jeashree Porlas",dept:"ROBINSONS"},
+  // CORP
+  {name:"Christian Borason",dept:"CORP"},{name:"Jastine Jhoy Molina",dept:"CORP"},
+  {name:"Arcy Betito",dept:"CORP"},{name:"Coleen Cabral",dept:"CORP"},
+  {name:"Clarence Ocampo",dept:"CORP"},{name:"Angela Obar",dept:"CORP"},
+];
+
+const DEPT_COLORS = {
+  "MAIN INTERNATIONAL":"#4f46e5","MAIN DOMESTIC":"#10b981",
+  "SM MANILA":"#f59e0b","ROBINSONS":"#ef4444","CORP":"#22c55e"
+};
+
+let currentAgentIndex = null;
+const photos = {};
+
+// Load saved photos from localStorage
+function loadPhotos() {
+  try {
+    const saved = localStorage.getItem('gladex_agent_photos');
+    if (saved) Object.assign(photos, JSON.parse(saved));
+  } catch(e) {}
+}
+
+function savePhotos() {
+  try { localStorage.setItem('gladex_agent_photos', JSON.stringify(photos)); } catch(e) {}
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+
+function filterAgents() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  const cards = document.querySelectorAll('.agent-card');
+  cards.forEach(card => {
+    const name = card.dataset.name.toLowerCase();
+    const cardDept = card.dataset.dept;
+    const matchSearch = !q || name.includes(q);
+    const matchDept = dept === 'all' || cardDept === dept;
+    card.style.display = (matchSearch && matchDept) ? '' : 'none';
+  });
+}
+
+function renderAgents() {
+  const grid = document.getElementById('agentsGrid');
+  grid.innerHTML = '';
+  const deptColor = dept => DEPT_COLORS[dept] || '#6b7280';
+
+  AGENTS.forEach((agent, i) => {
+    const key = agent.name.toUpperCase();
+    const hasPhoto = !!photos[key];
+    const card = document.createElement('div');
+    card.className = 'agent-card' + (hasPhoto ? ' has-photo' : '');
+    card.dataset.name = agent.name;
+    card.dataset.dept = agent.dept;
+
+    card.innerHTML = `
+      <div class="photo-circle" onclick="triggerUpload(${i})" title="Click to upload photo">
+        ${hasPhoto
+          ? `<img src="${photos[key]}" alt="${agent.name}">`
+          : `<span>${getInitials(agent.name)}</span>`}
+        <div class="overlay">📷</div>
+      </div>
+      <div class="agent-name">${agent.name}</div>
+      <div class="agent-dept">
+        <span class="status-dot ${hasPhoto ? 'dot-green' : 'dot-gray'}"></span>
+        ${agent.dept}
+      </div>
+      <button class="upload-btn" onclick="triggerUpload(${i})">
+        ${hasPhoto ? '🔄 Change Photo' : '📷 Upload Photo'}
+      </button>
+      ${hasPhoto ? `<button class="remove-btn" onclick="removePhoto('${key}', ${i})">✕ Remove</button>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+  updateStats();
+}
+
+function updateStats() {
+  const total = AGENTS.length;
+  const uploaded = Object.keys(photos).length;
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('uploadedCount').textContent = uploaded;
+  document.getElementById('missingCount').textContent = total - uploaded;
+}
+
+function triggerUpload(index) {
+  currentAgentIndex = index;
+  document.getElementById('fileInput').click();
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file || currentAgentIndex === null) return;
+  const agent = AGENTS[currentAgentIndex];
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Resize image to max 200x200 to keep file size small
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      canvas.width = 200; canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const key = agent.name.toUpperCase();
+      photos[key] = dataUrl;
+      // Save to Supabase (primary) + localStorage (cache)
+      try { localStorage.setItem('gladex_agent_photos', JSON.stringify(photos)); } catch(e) {}
+      savePhotoToSupabase(key, dataUrl).then(()=>{
+        document.getElementById('sbStatus').style.background='rgba(16,185,129,.2)';
+        document.getElementById('sbStatus').style.color='#6ee7b7';
+        document.getElementById('sbStatus').textContent='✅ Photo saved to Supabase: ' + agent.name;
+      });
+      renderAgents();
+      filterAgents();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removePhoto(key, index) {
+  delete photos[key];
+  savePhotos();
+  if(sb) sb.from("agent_photos").delete().eq("agent_name", key);
+  renderAgents();
+  filterAgents();
+}
+
+function generateAndCopy() {
+  const lines = ['const AGENT_PHOTOS={'];
+  Object.entries(photos).forEach(([name, b64]) => {
+    lines.push(`  "${name}":"${b64}",`);
+  });
+  lines.push('};');
+  const code = lines.join('\n');
+  document.getElementById('outputCode').textContent = code;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ Copied to Clipboard!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '⚡ Generate & Copy Code';
+      btn.classList.remove('copied');
+    }, 2500);
+  });
+}
+
+// Init — load from Supabase first (source of truth), localStorage as backup
+async function init() {
+  // Show loading state
+  document.getElementById('sbStatus').style.background='rgba(245,158,11,.2)';
+  document.getElementById('sbStatus').style.color='#fbbf24';
+  document.getElementById('sbStatus').textContent='⏳ Loading from Supabase...';
+
+  try {
+    // PRIMARY: Load from Supabase (visible to everyone)
+    const {data, error} = await sb.from("agent_photos").select("agent_name,photo_base64,photo_url");
+    if(error) throw error;
+
+    if(data && data.length > 0) {
+      // Use Supabase as source of truth
+      data.forEach(r => {
+        const key = r.agent_name;
+        if(r.photo_base64) photos[key] = r.photo_base64;
+        else if(r.photo_url) photos[key] = r.photo_url;
+      });
+      // Also save to localStorage as cache
+      try { localStorage.setItem('gladex_agent_photos', JSON.stringify(photos)); } catch(e) {}
+      document.getElementById('sbStatus').style.background='rgba(16,185,129,.2)';
+      document.getElementById('sbStatus').style.color='#6ee7b7';
+      document.getElementById('sbStatus').textContent='✅ Supabase connected — ' + data.length + ' photos loaded';
+    } else {
+      // Supabase empty — check localStorage for any cached photos to migrate
+      const cached = localStorage.getItem('gladex_agent_photos');
+      if(cached) {
+        const local = JSON.parse(cached);
+        Object.assign(photos, local);
+        // Migrate localStorage photos UP to Supabase
+        const rows = Object.entries(local).map(([k,v])=>({agent_name:k,photo_base64:v,updated_at:new Date().toISOString()}));
+        if(rows.length > 0) {
+          await sb.from("agent_photos").upsert(rows, {onConflict:"agent_name"});
+          document.getElementById('sbStatus').style.background='rgba(16,185,129,.2)';
+          document.getElementById('sbStatus').style.color='#6ee7b7';
+          document.getElementById('sbStatus').textContent='✅ Migrated ' + rows.length + ' local photos to Supabase';
+        }
+      } else {
+        document.getElementById('sbStatus').style.background='rgba(16,185,129,.2)';
+        document.getElementById('sbStatus').style.color='#6ee7b7';
+        document.getElementById('sbStatus').textContent='✅ Supabase connected — no photos yet';
+      }
+    }
+  } catch(e) {
+    console.error('Supabase error:', e);
+    // Fallback to localStorage
+    const cached = localStorage.getItem('gladex_agent_photos');
+    if(cached) Object.assign(photos, JSON.parse(cached));
+    document.getElementById('sbStatus').style.background='rgba(239,68,68,.2)';
+    document.getElementById('sbStatus').style.color='#fca5a5';
+    document.getElementById('sbStatus').textContent='❌ Supabase error — using local cache';
+  }
+  renderAgents();
+}
+init();
+</script>
+</body>
+</html>
