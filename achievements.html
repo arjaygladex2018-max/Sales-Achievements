@@ -503,9 +503,8 @@ async function loadAll(userTriggered=false){
   document.getElementById("lastUpdated").textContent="Last updated: "+new Date().toLocaleTimeString()+" · Auto-refreshes every 60 seconds";
 }
 
-// ── AUTH via Employee Accounts API ───────────────────────────
-const EMP_API="https://wuymgnqpkgxxxghvgcbq.supabase.co/rest/v1/employeeaccount";
-const EMP_KEY="sb_publishable_R5jGhsaREPJ427X1bRnpog_Iz7odR95";
+// ── AUTH via server-side Edge Function (never exposes passwords to the client) ──
+const LOGIN_API="https://wuymgnqpkgxxxghvgcbq.supabase.co/functions/v1/check-login";
 
 async function doLogin(){
   const code=document.getElementById("loginCode").value.trim();
@@ -514,68 +513,23 @@ async function doLogin(){
   if(!code||!pass){err.textContent="Please enter your Employee Code and Password";return;}
   err.textContent="Verifying...";
   try{
-    // Fetch ALL employees then filter client-side (avoids column name guessing)
-    let emp=null;
-    try{
-      // Try fetching with select=* first — no filter so we get all rows
-      const res=await fetch(EMP_API+"?select=*&limit=500",{
-        headers:{
-          "apikey":EMP_KEY,
-          "Authorization":"Bearer "+EMP_KEY,
-          "Accept":"application/json",
-          "Content-Type":"application/json"
-        }
-      });
-      console.log("API status:",res.status);
-      if(!res.ok){
-        const txt=await res.text();
-        console.error("API error body:",txt);
-        throw new Error("API error "+res.status);
-      }
-      const all=await res.json();
-      console.log("Total employees:",all.length,"Sample keys:",all.length>0?Object.keys(all[0]):[]);
-      if(all.length>0){
-        console.log("First employee full data:",JSON.stringify(all[0]));
-        console.log("All keys:",Object.keys(all[0]).join(", "));
-      }
-      // Search by any field that looks like an employee code
-      // Rows are shaped {id, data:{...actual employee fields...}} — search inside data
-      const codeUp=code.toUpperCase();
-      const match=all.find(e=>{
-        const rec=(e&&e.data&&typeof e.data==="object")?e.data:e;
-        const vals=Object.values(rec).map(v=>String(v||"").toUpperCase());
-        return vals.includes(codeUp);
-      });
-      emp=match?((match.data&&typeof match.data==="object")?match.data:match):null;
-    }catch(e){
-      console.error("Login error:",e);
-      err.textContent="Cannot connect to employee database: "+e.message;return;
-    }
-    if(!emp){err.textContent="Employee code not found. Please check and try again.";return;}
-    console.log("Employee found:",emp);
-    // Check status
-    const status=(emp.status||emp.Status||"active").toString().toLowerCase().trim();
-    console.log("Employee status:",status);
-    if(status==="inactive"){
-      err.textContent="Your account is inactive. Please contact your admin.";return;
-    }
-    // Use exact field names from employeeaccount table
-    console.log("Employee found:",JSON.stringify(emp));
-    const dbPass=emp.generated_password||emp.password||emp.Password||emp.pass||"";
-    if(!dbPass){err.textContent="Cannot verify password — contact your admin";return;}
-    // Case-insensitive password check
-    if(dbPass.trim().toUpperCase()!==pass.trim().toUpperCase()){
-      err.textContent="Incorrect password. Please try again.";return;
+    const res=await fetch(LOGIN_API,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({code,password:pass})
+    });
+    const result=await res.json();
+    if(!result.success){
+      err.textContent=result.error||"Login failed. Please try again.";
+      return;
     }
     // Success - save session
-    const userData={code,name:emp.name||emp.full_name||emp.fullname||emp.Name||code,
-      department:emp.department||emp.Department||"",
-      status:emp.status||emp.Status};
+    const userData=result.user;
     sessionStorage.setItem("gladex_user",JSON.stringify(userData));
     showApp(userData);
   }catch(e){
     console.error("Login error:",e);
-    err.textContent=e.message||"Login failed. Please try again.";
+    err.textContent="Cannot connect to the login service. Please try again.";
   }
 }
 
