@@ -325,7 +325,36 @@ function playAirportChime(){
   }catch(e){}
 }
 
-// Play the airport chime, then a spoken congratulations announcement for the agent
+// Applause / clapping — many short filtered-noise bursts to mimic a crowd clapping
+function playApplause(dur){
+  try{
+    const ctx=getAudioCtx();
+    if(!ctx)return;
+    dur=dur||6;
+    const master=ctx.createGain();
+    master.gain.value=0.9;
+    master.connect(ctx.destination);
+    const bufLen=Math.floor(ctx.sampleRate*0.08);
+    const buffer=ctx.createBuffer(1,bufLen,ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<bufLen;i++)data[i]=Math.random()*2-1; // white noise
+    const claps=Math.floor(dur*24); // clap density
+    for(let k=0;k<claps;k++){
+      const t=ctx.currentTime+Math.random()*dur;
+      const src=ctx.createBufferSource();src.buffer=buffer;
+      const bp=ctx.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1200+Math.random()*1800;bp.Q.value=0.6;
+      const g=ctx.createGain();
+      const amp=0.15+Math.random()*0.5;
+      src.connect(bp);bp.connect(g);g.connect(master);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(amp,t+0.005);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.06+Math.random()*0.05);
+      src.start(t);src.stop(t+0.16);
+    }
+  }catch(e){}
+}
+
+// Play the airport chime, speak the congratulations, then applause once it finishes
 function announceSale(a){
   playAirportChime();
   try{
@@ -335,9 +364,15 @@ function announceSale(a){
       const msg="Attention please! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos!";
       const u=new SpeechSynthesisUtterance(msg);
       u.rate=0.95;u.pitch=1.05;u.volume=1;
+      let clapped=false;
+      const clap=()=>{if(clapped)return;clapped=true;playApplause(7);};
+      u.onend=clap;u.onerror=clap;         // clap right after the announcement
       setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){}},1000); // let the chime lead
+      setTimeout(clap,10000);              // fallback if onend never fires
+    }else{
+      setTimeout(()=>playApplause(7),2200); // no speech engine → clap after the chime
     }
-  }catch(e){}
+  }catch(e){setTimeout(()=>playApplause(7),2200);}
 }
 
 async function fetchCSV(gid){
@@ -380,7 +415,7 @@ function showSalesPopup(a){
     document.getElementById("spAmount").textContent=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";
     pop.style.display="flex";
     announceSale(a);
-    setTimeout(()=>{pop.style.display="none";resolve();},6000);
+    setTimeout(()=>{pop.style.display="none";resolve();},20000);
   });
 }
 async function processPopupQueue(){
