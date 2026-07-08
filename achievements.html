@@ -197,7 +197,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- New-sale celebration popup -->
 <div id="salesPopup" style="display:none" onclick="this.style.display='none'">
   <div class="sp-card">
-    <div class="sp-badge">🎉 New Sale!</div>
+    <div class="sp-badge" id="spBadge">🎉 New Sale!</div>
     <div class="sp-avatar" id="spAvatar"></div>
     <div class="sp-name" id="spName"></div>
     <div class="sp-sub" id="spSub"></div>
@@ -240,6 +240,8 @@ let prevStreaks=0,prevBlitz=0;
 let domTeams={};
 const DOM_SETTINGS_GID="724700558";
 let seenCounts={};        // nu -> today's sale count already announced
+let seenStreak=new Set(); // agents already congratulated for a 4+ day streak today
+let seenBlitz=new Set();  // agents already congratulated for 4+ sales in a day today
 let firstSalesLoad=true;
 let lastSalesDay="";
 let popupQueue=[];
@@ -338,22 +340,35 @@ function pickHappyFemaleVoice(){
     return en.find(v=>female.test(v.name))||vs.find(v=>female.test(v.name))||en[0]||vs[0];
   }catch(e){return null;}
 }
+// For the Taglish shout-out, prefer a Filipino/Tagalog voice (best pronunciation) if present
+function pickShoutVoice(){
+  try{
+    const vs=(_voices&&_voices.length)?_voices:(window.speechSynthesis.getVoices()||[]);
+    return vs.find(v=>v.lang&&/^(fil|tl)/i.test(v.lang))||pickHappyFemaleVoice();
+  }catch(e){return pickHappyFemaleVoice();}
+}
 
 // Airport chime → cheerful female congratulations → Taglish shout-out ("Igong mo na yan!")
+// Works for a new sale, a 4-day streak, or a 4-sales-in-a-day blitz (a.kind).
 function announceSale(a){
   playAirportChime();
   try{
     if("speechSynthesis" in window){
       speechSynthesis.cancel(); // avoid overlap if several fire in a row
-      const amount=Math.round(a.todaySrp).toLocaleString("en-US");
-      const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos! Amazing job!";
-      const shout="Shout out sayo, "+a.name+"! Igong mo na yan!";
+      let reason;
+      if(a.kind==="streak")reason="for "+a.value+" straight days of sales";
+      else if(a.kind==="blitz")reason="for "+a.value+" sales in one day";
+      else reason="for a new sale of "+Math.round(a.todaySrp).toLocaleString("en-US")+" pesos";
+      const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+"! Amazing job!";
+      const shout="Shout out sa iyo, "+a.name+"! Igong mo na yan!";
       const voice=pickHappyFemaleVoice();
+      const shoutVoice=pickShoutVoice();
       // Higher pitch + lively rate = cheerful, happy delivery
       const u1=new SpeechSynthesisUtterance(msg);
       u1.rate=1.03;u1.pitch=1.3;u1.volume=1;if(voice)u1.voice=voice;
       const u2=new SpeechSynthesisUtterance(shout);
-      u2.rate=1.05;u2.pitch=1.35;u2.volume=1;if(voice)u2.voice=voice;
+      u2.rate=0.98;u2.pitch=1.3;u2.volume=1;
+      if(shoutVoice){u2.voice=shoutVoice;if(/^(fil|tl)/i.test(shoutVoice.lang))u2.lang=shoutVoice.lang;}
       let shouted=false;
       const doShout=()=>{if(shouted)return;shouted=true;try{speechSynthesis.speak(u2);}catch(e){}};
       u1.onend=doShout;u1.onerror=doShout;   // shout-out right after the announcement
@@ -400,7 +415,12 @@ function showSalesPopup(a){
     document.getElementById("spAvatar").innerHTML=a.photo?`<img src="${a.photo}" alt="${a.name}" onerror="this.style.display='none'">`:getInitials(a.name);
     document.getElementById("spName").textContent=a.name;
     document.getElementById("spSub").textContent=a.team?(a.dept+" · "+a.team):a.dept;
-    document.getElementById("spAmount").textContent=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";
+    let badge,amount;
+    if(a.kind==="streak"){badge="🔥 Day Streak!";amount=a.value+" consecutive days 🔥";}
+    else if(a.kind==="blitz"){badge="⚡ Daily Blitz!";amount=a.value+" sales today ⚡";}
+    else{badge="🎉 New Sale!";amount=fmt(a.todaySrp)+" · "+a.todayCount+" sale"+(a.todayCount>1?"s":"")+" today";}
+    document.getElementById("spBadge").textContent=badge;
+    document.getElementById("spAmount").textContent=amount;
     pop.style.display="flex";
     announceSale(a);
     setTimeout(()=>{pop.style.display="none";resolve();},20000);
@@ -520,8 +540,8 @@ async function fetchAllData(){
     const photo=photos[nu]||"";
     const streak=getStreak(d.days);
     if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu,lastSeq:d.lastSeq});
-    if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo});
-    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo});
+    if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo,nu});
+    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo,nu});
   });
 
   todaySales.sort((a,b)=>b.todaySrp-a.todaySrp);
@@ -657,30 +677,33 @@ async function loadAll(userTriggered=false){
   await Promise.all([loadPhotos(),loadDomTeams()]);
   const data=await fetchAllData();
   renderContent(data);
-  // ── New-sale celebration: full-screen popup + loud gong on every new sale ──
+  // ── Celebration popups: new sales + 4-day streaks + 4-sales-in-a-day blitzes ──
   if(data.todayStr!==lastSalesDay){ // day rolled over → reset baseline
     lastSalesDay=data.todayStr;
     seenCounts={};
+    seenStreak=new Set();
+    seenBlitz=new Set();
     firstSalesLoad=true;
   }
   if(firstSalesLoad||userTriggered){
-    // Page open (or manual Refresh): announce only the single newest sale (popup + gong).
+    // Page open (or manual Refresh): announce only the single newest sale (popup).
     data.todaySales.forEach(a=>{seenCounts[a.nu]=a.todayCount;});
     let newest=null;
     data.todaySales.forEach(a=>{if(!newest||(a.lastSeq||0)>(newest.lastSeq||0))newest=a;});
     popupQueue=newest?[newest]:[];
     firstSalesLoad=false;
-    if(popupQueue.length)processPopupQueue();
   }else{
     // Background auto-refresh: only announce genuinely new sales since last check
-    let queued=false;
     data.todaySales.forEach(a=>{
       const prev=seenCounts[a.nu]||0;
-      if(a.todayCount>prev){popupQueue.push(a);queued=true;} // new agent OR an extra sale
+      if(a.todayCount>prev)popupQueue.push(a); // new agent OR an extra sale
       seenCounts[a.nu]=a.todayCount;
     });
-    if(queued)processPopupQueue();
   }
+  // Congratulate agents who reached a 4+ day streak or 4+ sales today (once each per day)
+  data.streaks.forEach(s=>{if(!seenStreak.has(s.nu)){seenStreak.add(s.nu);popupQueue.push({name:s.name,dept:s.dept,team:s.team,value:s.value,photo:s.photo,nu:s.nu,kind:"streak"});}});
+  data.blitz.forEach(b=>{if(!seenBlitz.has(b.nu)){seenBlitz.add(b.nu);popupQueue.push({name:b.name,dept:b.dept,team:b.team,value:b.value,photo:b.photo,nu:b.nu,kind:"blitz"});}});
+  if(popupQueue.length)processPopupQueue();
   prevStreaks=data.streaks.length;prevBlitz=data.blitz.length;
   const totalToday=data.todaySales.length;
   const totalSrpToday=data.todaySales.reduce((s,a)=>s+a.todaySrp,0);
