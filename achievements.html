@@ -325,29 +325,35 @@ function playAirportChime(){
   }catch(e){}
 }
 
-// Pick a Filipino voice if the device has one (else default voice reads it phonetically)
-function pickFilipinoVoice(){
+// Cache available voices and pick a cheerful female English voice when the device has one
+let _voices=[];
+function loadVoices(){try{_voices=window.speechSynthesis.getVoices()||[];}catch(e){}}
+if("speechSynthesis" in window){loadVoices();try{window.speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}}
+function pickHappyFemaleVoice(){
   try{
-    const vs=(window.speechSynthesis.getVoices()||[]);
-    return vs.find(v=>v.lang&&/^(fil|tl)/i.test(v.lang))||null;
+    const vs=(_voices&&_voices.length)?_voices:(window.speechSynthesis.getVoices()||[]);
+    if(!vs.length)return null;
+    const female=/(zira|hazel|eva|samantha|victoria|karen|moira|tessa|fiona|susan|catherine|serena|allison|ava|aria|jenny|michelle|nova|mia|luna|joana|female|woman|girl)/i;
+    const en=vs.filter(v=>/^en/i.test(v.lang));
+    return en.find(v=>female.test(v.name))||vs.find(v=>female.test(v.name))||en[0]||vs[0];
   }catch(e){return null;}
 }
 
-// Airport chime → spoken congratulations → Taglish shout-out ("Gong mo na yan!")
+// Airport chime → cheerful female congratulations → Taglish shout-out ("Igong mo na yan!")
 function announceSale(a){
   playAirportChime();
   try{
     if("speechSynthesis" in window){
       speechSynthesis.cancel(); // avoid overlap if several fire in a row
       const amount=Math.round(a.todaySrp).toLocaleString("en-US");
-      const msg="Attention please! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos!";
+      const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos! Amazing job!";
       const shout="Shout out sayo, "+a.name+"! Igong mo na yan!";
+      const voice=pickHappyFemaleVoice();
+      // Higher pitch + lively rate = cheerful, happy delivery
       const u1=new SpeechSynthesisUtterance(msg);
-      u1.rate=0.95;u1.pitch=1.05;u1.volume=1;
+      u1.rate=1.03;u1.pitch=1.3;u1.volume=1;if(voice)u1.voice=voice;
       const u2=new SpeechSynthesisUtterance(shout);
-      u2.rate=0.98;u2.pitch=1.1;u2.volume=1;
-      const fv=pickFilipinoVoice();
-      if(fv){u2.voice=fv;u2.lang=fv.lang;}
+      u2.rate=1.05;u2.pitch=1.35;u2.volume=1;if(voice)u2.voice=voice;
       let shouted=false;
       const doShout=()=>{if(shouted)return;shouted=true;try{speechSynthesis.speak(u2);}catch(e){}};
       u1.onend=doShout;u1.onerror=doShout;   // shout-out right after the announcement
