@@ -350,13 +350,21 @@ function pickShoutVoice(){
 
 // ── Fallback voice for browsers WITHOUT a speech engine (e.g. Smart TVs) ──
 // Fetch spoken audio from a free online TTS service and play it like the chime.
+// Split into SHORT phrases — the free TTS endpoint truncates long text, so we
+// break on clause boundaries (comma+space, keeping "38,799" intact) and cap length.
 function ttsChunks(text){
-  const max=190,out=[];let cur="";
-  text.split(" ").forEach(w=>{
-    if((cur+" "+w).trim().length>max){if(cur)out.push(cur.trim());cur=w;}
-    else cur=(cur?cur+" ":"")+w;
+  const max=100,out=[];
+  text.split(/,\s+/).forEach(clause=>{
+    clause=clause.trim();
+    if(!clause)return;
+    if(clause.length<=max){out.push(clause);return;}
+    let cur="";
+    clause.split(/\s+/).forEach(w=>{
+      if((cur+" "+w).trim().length>max){if(cur)out.push(cur.trim());cur=w;}
+      else cur=(cur?cur+" ":"")+w;
+    });
+    if(cur.trim())out.push(cur.trim());
   });
-  if(cur.trim())out.push(cur.trim());
   return out;
 }
 function ttsAudio(text,lang){
