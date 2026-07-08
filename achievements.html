@@ -341,7 +341,7 @@ function announceSale(a){
       speechSynthesis.cancel(); // avoid overlap if several fire in a row
       const amount=Math.round(a.todaySrp).toLocaleString("en-US");
       const msg="Attention please! Congratulations to "+a.name+" from "+a.dept+", for a new sale of "+amount+" pesos!";
-      const shout="Shout out sayo, "+a.name+"! Gong mo na yan!";
+      const shout="Shout out sayo, "+a.name+"! Igong mo na yan!";
       const u1=new SpeechSynthesisUtterance(msg);
       u1.rate=0.95;u1.pitch=1.05;u1.volume=1;
       const u2=new SpeechSynthesisUtterance(shout);
