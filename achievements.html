@@ -360,7 +360,7 @@ function announceSale(a){
       else if(a.kind==="blitz")reason="for "+a.value+" sales in one day";
       else reason="for a new sale of "+Math.round(a.todaySrp).toLocaleString("en-US")+" pesos";
       const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+"! Amazing job!";
-      const shout="Shout out sa iyo, "+a.name+"! Igong mo na yan!";
+      const shout="Shout out sa iyo, "+a.name+"! Gong muna yan!";
       const voice=pickHappyFemaleVoice();
       const shoutVoice=pickShoutVoice();
       // Higher pitch + lively rate = cheerful, happy delivery
