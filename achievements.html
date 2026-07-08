@@ -348,22 +348,56 @@ function pickShoutVoice(){
   }catch(e){return pickHappyFemaleVoice();}
 }
 
-// Airport chime → cheerful female congratulations → Taglish shout-out ("Igong mo na yan!")
+// ── Fallback voice for browsers WITHOUT a speech engine (e.g. Smart TVs) ──
+// Fetch spoken audio from a free online TTS service and play it like the chime.
+function ttsChunks(text){
+  const max=190,out=[];let cur="";
+  text.split(" ").forEach(w=>{
+    if((cur+" "+w).trim().length>max){if(cur)out.push(cur.trim());cur=w;}
+    else cur=(cur?cur+" ":"")+w;
+  });
+  if(cur.trim())out.push(cur.trim());
+  return out;
+}
+function ttsAudio(text,lang){
+  return new Promise(resolve=>{
+    let done=false;const fin=()=>{if(done)return;done=true;resolve();};
+    try{
+      const url="/api/tts?tl="+(lang||"en")+"&q="+encodeURIComponent(text);
+      const a=new Audio(url);
+      a.onended=fin;
+      a.onerror=fin;             // don't stall the chain if a clip fails
+      setTimeout(fin,9000);      // hard safety: never hang on a stalled clip
+      const p=a.play();
+      if(p&&p.catch)p.catch(fin);
+    }catch(e){fin();}
+  });
+}
+async function playAnnouncementAudio(msg,shout){
+  for(const c of ttsChunks(msg)) await ttsAudio(c,"en");
+  await new Promise(r=>setTimeout(r,250));
+  for(const c of ttsChunks(shout)) await ttsAudio(c,"tl"); // Tagalog voice for the shout-out
+}
+
+// Airport chime → cheerful female congratulations → Taglish shout-out ("Gong muna yan!")
 // Works for a new sale, a 4-day streak, or a 4-sales-in-a-day blitz (a.kind).
+// Uses the browser's built-in speech engine when available (laptop/phone),
+// otherwise falls back to online TTS audio so the voice also plays on the TV.
 function announceSale(a){
   playAirportChime();
-  try{
-    if("speechSynthesis" in window){
+  let reason;
+  if(a.kind==="streak")reason="for "+a.value+" straight days of sales";
+  else if(a.kind==="blitz")reason="for "+a.value+" sales in one day";
+  else reason="for a new sale of "+Math.round(a.todaySrp).toLocaleString("en-US")+" pesos";
+  const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+"! Amazing job!";
+  const shout="Shout out sa iyo, "+a.name+"! Gong muna yan!";
+  const voices=(_voices&&_voices.length)?_voices:((("speechSynthesis" in window)&&window.speechSynthesis.getVoices())||[]);
+  const hasEngine=("speechSynthesis" in window)&&voices.length>0;
+  if(hasEngine){
+    try{
       speechSynthesis.cancel(); // avoid overlap if several fire in a row
-      let reason;
-      if(a.kind==="streak")reason="for "+a.value+" straight days of sales";
-      else if(a.kind==="blitz")reason="for "+a.value+" sales in one day";
-      else reason="for a new sale of "+Math.round(a.todaySrp).toLocaleString("en-US")+" pesos";
-      const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+"! Amazing job!";
-      const shout="Shout out sa iyo, "+a.name+"! Gong muna yan!";
       const voice=pickHappyFemaleVoice();
       const shoutVoice=pickShoutVoice();
-      // Higher pitch + lively rate = cheerful, happy delivery
       const u1=new SpeechSynthesisUtterance(msg);
       u1.rate=1.03;u1.pitch=1.3;u1.volume=1;if(voice)u1.voice=voice;
       const u2=new SpeechSynthesisUtterance(shout);
@@ -374,8 +408,11 @@ function announceSale(a){
       u1.onend=doShout;u1.onerror=doShout;   // shout-out right after the announcement
       setTimeout(()=>{try{speechSynthesis.speak(u1);}catch(e){}},1000); // let the chime lead
       setTimeout(doShout,11000);             // fallback if onend never fires
-    }
-  }catch(e){}
+    }catch(e){}
+  }else{
+    // TV / browser with no speech engine → play spoken audio from online TTS
+    setTimeout(()=>{playAnnouncementAudio(msg,shout);},1000);
+  }
 }
 
 async function fetchCSV(gid){
