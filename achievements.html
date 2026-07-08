@@ -389,7 +389,13 @@ function announceSale(a){
   if(a.kind==="streak")reason="for "+a.value+" straight days of sales";
   else if(a.kind==="blitz")reason="for "+a.value+" sales in one day";
   else reason="for a new sale of "+Math.round(a.todaySrp).toLocaleString("en-US")+" pesos";
-  const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+"! Amazing job!";
+  const part=(a.particular||"").trim();
+  const dest=(a.destination||"").trim();
+  let pd="";
+  if(part&&dest)pd=", "+part+" to "+dest;
+  else if(part)pd=", "+part;
+  else if(dest)pd=", to "+dest;
+  const msg="Yay! Congratulations to "+a.name+" from "+a.dept+", "+reason+pd+"! Amazing job!";
   const shout="Shout out sa iyo, "+a.name+"! Gong muna yan!";
   const voices=(_voices&&_voices.length)?_voices:((("speechSynthesis" in window)&&window.speechSynthesis.getVoices())||[]);
   const hasEngine=("speechSynthesis" in window)&&voices.length>0;
@@ -500,6 +506,11 @@ async function fetchAllData(){
     const ac=headers.findIndex(h=>h==="AGENT"||h==="AGENTS")>=0?headers.findIndex(h=>h==="AGENT"||h==="AGENTS"):c.agent;
     const sc=headers.findIndex(h=>h==="SRP")>=0?headers.findIndex(h=>h==="SRP"):c.srp;
     const mc=headers.findIndex(h=>h==="MONTHLY"||h==="MONTH")>=0?headers.findIndex(h=>h==="MONTHLY"||h==="MONTH"):c.monthly;
+    // PARTICULAR / DESTINATION columns (by header, with per-dept fallback; SM has no destination)
+    const partFallback={intl:5,dom:6,sm:3,rob:3,corp:5};
+    const destFallback={intl:4,dom:5,sm:-1,rob:2,corp:4};
+    const pc=headers.findIndex(h=>h==="PARTICULAR"||h==="PARTICULARS")>=0?headers.findIndex(h=>h==="PARTICULAR"||h==="PARTICULARS"):(partFallback[dept]!==undefined?partFallback[dept]:5);
+    const dc=headers.findIndex(h=>h==="DESTINATION"||h==="DESTINATIONS")>=0?headers.findIndex(h=>h==="DESTINATION"||h==="DESTINATIONS"):(destFallback[dept]!==undefined?destFallback[dept]:-1);
     const deptName=DEPT_NAMES[dept];
 
     for(let i=1;i<lines.length;i++){
@@ -539,10 +550,9 @@ async function fetchAllData(){
       const srp=toN(g(sc));if(srp<=0)continue;
 
       // ── EXCLUDE Insurance and Baggage-only transactions ──
-      // PARTICULAR column per dept:
-      // INTL: col F(5), DOM: col G(6), SM: col D(3), ROB: col D(3), CORP: col F(5)
-      const partCols={intl:5,dom:6,sm:3,rob:3,corp:5};
-      const partVal=g(partCols[dept]||5).toUpperCase();
+      const particular=g(pc);
+      const destination=dc>=0?g(dc):"";
+      const partVal=particular.toUpperCase();
       const isExcluded=
         partVal.includes("INSURANCE")||
         partVal.includes("BAGGAGE ONLY")||
@@ -550,10 +560,10 @@ async function fetchAllData(){
         partVal.includes("TRAVEL INSURANCE");
       if(isExcluded)continue;
 
-      if(!agentData[nu])agentData[nu]={name,dept:deptName,team:(dept==="dom"?(domTeams[nu]||""):""),days:{},todaySrp:0,monthlySrp:0,todayCount:0,lastSeq:0};
+      if(!agentData[nu])agentData[nu]={name,dept:deptName,team:(dept==="dom"?(domTeams[nu]||""):""),days:{},todaySrp:0,monthlySrp:0,todayCount:0,lastSeq:0,lastParticular:"",lastDestination:""};
       agentData[nu].days[dateKey]=(agentData[nu].days[dateKey]||0)+1;
       agentData[nu].monthlySrp+=srp;
-      if(dateKey===todayStr){agentData[nu].todaySrp+=srp;agentData[nu].todayCount++;agentData[nu].lastSeq=++seqCounter;}
+      if(dateKey===todayStr){agentData[nu].todaySrp+=srp;agentData[nu].todayCount++;agentData[nu].lastSeq=++seqCounter;agentData[nu].lastParticular=particular;agentData[nu].lastDestination=destination;}
     }
   }));
 
@@ -576,9 +586,9 @@ async function fetchAllData(){
   Object.entries(agentData).forEach(([nu,d])=>{
     const photo=photos[nu]||"";
     const streak=getStreak(d.days);
-    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu,lastSeq:d.lastSeq});
-    if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo,nu});
-    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo,nu});
+    if(d.todayCount>0)todaySales.push({name:d.name,dept:d.dept,team:d.team,todaySrp:d.todaySrp,todayCount:d.todayCount,monthlySrp:d.monthlySrp,photo,nu,lastSeq:d.lastSeq,particular:d.lastParticular,destination:d.lastDestination});
+    if(streak>=4)streaks.push({name:d.name,dept:d.dept,team:d.team,value:streak,photo,nu,particular:d.lastParticular,destination:d.lastDestination});
+    if(d.todayCount>=4)blitz.push({name:d.name,dept:d.dept,team:d.team,value:d.todayCount,photo,nu,particular:d.lastParticular,destination:d.lastDestination});
   });
 
   todaySales.sort((a,b)=>b.todaySrp-a.todaySrp);
